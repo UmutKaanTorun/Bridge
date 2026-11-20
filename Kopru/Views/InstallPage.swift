@@ -1,5 +1,6 @@
 import KopruCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Kenar çubuğundaki "Program kur": arama, kategoriler, kartlar ve sağ panel.
 struct InstallPage: View {
@@ -11,6 +12,7 @@ struct InstallPage: View {
     private let columns = [GridItem(.adaptive(minimum: 200), spacing: 10, alignment: .top)]
 
     var body: some View {
+        @Bindable var model = model
         let sections = model.catalog.sections(matching: query, category: category)
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -36,6 +38,9 @@ struct InstallPage: View {
             if model.selectedEntryID == nil, model.unlistedFile == nil {
                 model.selectedEntryID = (sections.ready.first ?? sections.upcoming.first)?.id
             }
+        }
+        .fileImporter(isPresented: $model.isPickingInstaller, allowedContentTypes: UTType.windowsInstallers) { result in
+            if case let .success(url) = result { model.showInstallPage(unlisted: url) }
         }
     }
 
@@ -79,7 +84,16 @@ struct InstallPage: View {
     }
 
     private var filterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) { chips }
+        HStack(spacing: 12) {
+            ScrollView(.horizontal, showsIndicators: false) { chips }
+            HStack(spacing: 4) {
+                Text("Listede yok mu?").foregroundStyle(.secondary)
+                Button("Dosya seç…") { model.isPickingInstaller = true }
+                    .buttonStyle(.link)
+            }
+            .fixedSize()
+            .help("Kurulum dosyasını (.exe, .msi) pencereye de sürükleyebilirsin")
+        }
     }
 
     @ViewBuilder
@@ -113,6 +127,8 @@ struct InstallPage: View {
                 .font(.headline)
             Text("Kurulum dosyan varsa pencereye sürükle; Köprü onu yeni bir bottle'a kurar.")
                 .foregroundStyle(.secondary)
+            Button("Dosya seç…") { model.isPickingInstaller = true }
+                .padding(.top, 6)
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)

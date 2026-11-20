@@ -47,17 +47,6 @@ public struct RecipeCatalog: Sendable {
         return RecipeCatalog(recipes: recipes, upcoming: upcoming, filesDirectory: filesDirectory, problems: problems)
     }
 
-    /// Ad ve özette büyük/küçük harf ve aksan duyarsız arama; boş sorgu hepsini döndürür.
-    /// Yalnızca eski Kur penceresi için; Görev 7'de silinir.
-    public func search(_ query: String) -> [Recipe] {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return recipes }
-        let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
-        return recipes.filter {
-            $0.name.range(of: q, options: options) != nil || $0.summary.range(of: q, options: options) != nil
-        }
-    }
-
     public func recipe(id: String?) -> Recipe? {
         guard let id else { return nil }
         return recipes.first { $0.id == id }

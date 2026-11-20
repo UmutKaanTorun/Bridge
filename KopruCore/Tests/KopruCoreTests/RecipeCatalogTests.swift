@@ -110,17 +110,6 @@ struct RecipeCatalogTests {
         #expect(catalog.recipes.map(\.id) == ["alfa", "zeta"])
     }
 
-    @Test func searchIsCaseAndDiacriticInsensitive() {
-        let catalog = RecipeCatalog(recipes: [.fixture(id: "steam", name: "Steam"),
-                                              .fixture(id: "cizim", name: "Çizim", summary: "Teknik çizim")],
-                                    filesDirectory: URL(fileURLWithPath: "/tmp"))
-        #expect(catalog.search("").map(\.id) == ["cizim", "steam"])
-        #expect(catalog.search("STE").map(\.id) == ["steam"])
-        #expect(catalog.search("ciz").map(\.id) == ["cizim"])
-        #expect(catalog.search("teknik").map(\.id) == ["cizim"])
-        #expect(catalog.search("yok").isEmpty)
-    }
-
     @Test func findsRecipeByID() {
         let catalog = RecipeCatalog(recipes: [.fixture()], filesDirectory: URL(fileURLWithPath: "/tmp/RecipeFiles"))
         #expect(catalog.recipe(id: "steam")?.name == "Steam")

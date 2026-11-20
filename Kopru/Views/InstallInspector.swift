@@ -43,7 +43,9 @@ struct InstallInspector: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if let entry = model.selectedEntry {
+        if let file = model.unlistedFile {
+            UnlistedDetail(file: file, defaultBottleID: model.unlistedDefaultBottleID).id(file)
+        } else if let entry = model.selectedEntry {
             EntryDetail(entry: entry).id(entry.id)
         } else {
             ContentUnavailableView("Bir program seç", systemImage: "square.grid.2x2",
@@ -151,8 +153,8 @@ private struct EntryActions: View {
         switch entry {
         case let .recipe(recipe):
             recipeActions(recipe)
-        case .upcoming:
-            EmptyView()
+        case let .upcoming(program):
+            TryAnywayActions(broken: program.status == .broken)
         }
     }
 
@@ -173,7 +175,7 @@ private struct EntryActions: View {
                 }
             }
         } else if recipe.rating == .broken {
-            EmptyView()
+            TryAnywayActions(broken: true)
         } else if model.isInstallRunning {
             RunningInstallNotice()
         } else {
@@ -263,6 +265,24 @@ struct InstallProgressPanel: View {
             Button(progress.createsBottle && progress.bottle != nil ? "Tut ve kapat" : "Kapat") {
                 model.closeInstallPanel()
             }
+        }
+    }
+}
+
+/// Hazır olmayan programda: kurulum dosyasıyla genel ayarlarla deneme.
+private struct TryAnywayActions: View {
+    @Environment(AppModel.self) private var model
+    let broken: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(broken
+                 ? "Kurulum dosyasıyla genel ayarlarla yine de deneyebilirsin; sorun çıkarsa günlük dosyası yardımcı olur."
+                 : "Kurulum dosyan varsa hazır tarifi beklemeden genel ayarlarla deneyebilirsin.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(broken ? "Yine de dene…" : "Dosya seç…") { model.isPickingInstaller = true }
         }
     }
 }

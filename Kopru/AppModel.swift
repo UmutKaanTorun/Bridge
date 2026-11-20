@@ -75,6 +75,8 @@ final class AppModel {
     var unlistedFile: URL?
     /// Listede olmayan dosya için önerilen bottle (dosya bırakılmadan önce bakılan bottle).
     var unlistedDefaultBottleID: Bottle.ID?
+    /// Kur sayfasının kurulum dosyası seçicisi açık mı ("Dosya seç…", "Yine de dene…").
+    var isPickingInstaller = false
 
     /// Seçili bottle; Kur sayfasındayken nil. Eski görünümler için yazılabilir.
     var selectedBottleID: Bottle.ID? {

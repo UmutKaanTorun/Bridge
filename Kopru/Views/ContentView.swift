@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    @State private var unlistedStart: InstallSheet.Start?
+    @State private var isDropTargeted = false
     @State private var showSettings = false
     @State private var pickExecutable = false
     @State private var executableToRun: URL?
@@ -15,18 +15,15 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 180, ideal: 210)
         } detail: {
             detail
+                .dropDestination(for: URL.self) { urls, _ in
+                    handleDrop(urls)
+                } isTargeted: { isDropTargeted = $0 }
+                .overlay {
+                    if isDropTargeted { DropOverlay() }
+                }
         }
         .toolbar { toolbar }
         .onChange(of: model.selection) { model.rescan() }
-        .dropDestination(for: URL.self) { urls, _ in
-            guard model.isReady, let file = urls.first,
-                  ["exe", "msi"].contains(file.pathExtension.lowercased()) else { return false }
-            unlistedStart = .unlisted(file)
-            return true
-        }
-        .sheet(item: $unlistedStart) { start in
-            InstallSheet(start: start)
-        }
         .sheet(item: progressBinding) { _ in
             InstallProgressView()
         }
@@ -60,14 +57,21 @@ struct ContentView: View {
         }
     }
 
-    /// Tarif kurulumları Kur sayfasının panelinde; diğerleri (listede olmayan, boş bottle) bu sheet'te.
+    /// Kur sayfasındaki kurulumlar sağ panelde; yalnızca boş bottle oluşturma sheet'te görünür.
     private var progressBinding: Binding<InstallProgress?> {
-        Binding(get: {
-                    guard unlistedStart == nil, let progress = model.install else { return nil }
-                    if case .recipe = progress.source { return nil }
-                    return progress
-                },
+        Binding(get: { model.install?.source == .emptyBottle ? model.install : nil },
                 set: { if $0 == nil { model.install = nil } })
+    }
+
+    private func handleDrop(_ urls: [URL]) -> Bool {
+        guard model.isReady else { return false }
+        guard let file = urls.first(where: { ["exe", "msi"].contains($0.pathExtension.lowercased()) }) else {
+            model.alert = AppAlert(title: "Bu dosya kurulamaz",
+                                   message: "Yalnızca .exe ve .msi kurulum dosyaları kurulabilir.")
+            return false
+        }
+        model.showInstallPage(unlisted: file)
+        return true
     }
 
     @ViewBuilder
