@@ -2737,3 +2737,21 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - [ ] **Adım 5: Dalı birleştirmeyi konuş**
 
 superpowers:finishing-a-development-branch ile `gelistirme/kur-ekrani` dalının nereye birleşeceğini Umut'la konuş (v0.1 dalı henüz `main`'e birleşmedi).
+
+## Uygulama Notları
+
+**Durum (2026-11-21):** Görev 1–9 ve son inceleme düzeltmeleri `gelistirme/kur-ekrani` dalında. KopruCore 132 test geçiyor, Debug derleme temiz. Görevler alt ajanlarla yürütüldü; her görev ayrı bir ajanla incelendi, dal sonunda bütün olarak incelendi.
+
+**Kabul testi (Umut, 2026-11-21):** Sayfa, arama, kategoriler, sağ panel ve görünüm denendi: "hepsi tamam". Kurulum adımları (Steam başarılı/başarısız kurulum, kur → sil → yeniden kur, listede olmayan program kurulumu, kurulum sürerken "Boş Bottle…" kapalı) denenmedi; diskte yeni kurulum izi yok. Bir sonraki Köprü oturumunda bakılmalı.
+
+**Plandan sapmalar:**
+- Gözle kontroller görev sonlarında değil, sonda tek seferde yapıldı (alt ajanlar kullanıcıyla konuşamıyor).
+- **Notepad++ ve WinRAR tarifleri çıkarıldı.** Görev 9'da eklenmişlerdi (2d444d5) ama Köprü'de test edilmediler; spec 3.3 gereği "Yakında" listesine `testing` olarak geçtiler. Test geçince geri getirmek için: `git checkout 2d444d5 -- Resources/Recipes/notepadpp.json Resources/Recipes/winrar.json Resources/RecipeFiles/notepadpp Resources/RecipeFiles/winrar`, `Resources/Catalog/upcoming.json`'dan iki girdiyi sil, `testedOn.date`'i test gününe çek.
+- Başarı ölçütü 1'deki boş durum "Program Kur" düğmesi yok: hiç bottle yoksa uygulama doğrudan Program kur sayfasında açılır.
+- Görev 6: tarif ancak `detect` dosyaları bottle'da varsa kurulu sayılır (`Recipe.isInstalled(in:)`); yoksa başarısız kurulumdan tutulan yarım bottle "Kurulu" görünüyordu. Başlık en küçük pencerede sığsın diye arama alanı 180–280 pt esnek.
+- Görev 7: kart seçilince panel dışında kalan listede olmayan kurulum için panelin üstünde dönüş satırı ("Göster"); önerilen bottle silinirse öneri yeni bottle'a döner.
+- Görev 8: `.toolbar(removing: .title)` yalnızca macOS 15+ (`#available`); macOS 14'te başlık araç çubuğunda da görünür. ⌘F için Düzen menüsündeki metin grubu (Bul, Yazım ve Dilbilgisi, Değiştirmeler, Dönüşümler, Konuşma) kaldırıldı.
+- Son inceleme: tek kurulum kuralı tüm giriş noktalarında geçerli ve "Boş Bottle…" kurulum sürerken kapalı; bottle silinince biten kurulum paneli kapanır; kenar çubuğunda boşluğa tıklamak seçimi silmez; Ayarlar sheet'i kendi bottle'ını tutar (⌘F onu boşaltmaz); kartta tek tık beklemesiz; sürükleme katmanı yalnızca motor hazırken ve yalnızca dosya URL'leri için; depo testleri eklendi (tarif id = dosya adı, `detect` dolu).
+- Commit imza satırları, kodu yazan modele göre (Haiku/Sonnet/Opus) değişiyor.
+
+**Ertelenen küçük bulgular** (birleştirmeyi engellemez): kartlarda erişilebilirlik özellikleri yok; "Tümü" String Catalog'a çıkmıyor; bottle adı uygunluğu her çizimde diskten iki kez okunuyor; simgesi olmayan tarif için olumsuz sonuç önbelleğe alınmıyor; okunamayan dosya boyutu "Sıfır KB" görünüyor; biten listede olmayan kurulumun "Kuruldu" satırı panel kapatılana dek kalıyor ve bu durumda "Kapat" düğmesi yok; rozet yazılarının açık temadaki kontrastı ölçülmedi (gözle sorun görülmedi); İ/I büyük harfli Türkçe arama için test yok.
