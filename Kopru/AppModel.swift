@@ -78,6 +78,14 @@ final class AppModel {
     /// Kur sayfasının kurulum dosyası seçicisi açık mı ("Dosya seç…", "Yine de dene…").
     var isPickingInstaller = false
 
+    /// ⌘F: Kur sayfası açılınca arama alanı odak alsın.
+    var wantsSearchFocus = false
+
+    func focusSearch() {
+        selection = .install
+        wantsSearchFocus = true
+    }
+
     /// Seçili bottle; Kur sayfasındayken nil. Eski görünümler için yazılabilir.
     var selectedBottleID: Bottle.ID? {
         get { if case let .bottle(id) = selection { id } else { nil } }
@@ -209,6 +217,11 @@ final class AppModel {
         guard let url = catalog.iconURL(for: recipe.id), let image = NSImage(contentsOf: url) else { return nil }
         recipeIconCache[recipe.id] = image
         return image
+    }
+
+    /// Kenar çubuğunda tarife bağlı bottle'ın simgesi.
+    func recipeIcon(forBottle bottle: Bottle) -> NSImage? {
+        recipe(for: bottle).flatMap { recipeIcon(for: .recipe($0)) }
     }
 
     // MARK: Programları açma

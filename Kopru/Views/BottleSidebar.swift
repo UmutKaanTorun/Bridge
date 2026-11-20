@@ -16,7 +16,15 @@ struct BottleSidebar: View {
             Section("Bottle'lar") {
                 ForEach(model.bottles) { bottle in
                     HStack {
-                        Label(bottle.info.name, systemImage: "shippingbox")
+                        Label {
+                            Text(bottle.info.name)
+                        } icon: {
+                            if let image = model.recipeIcon(forBottle: bottle) {
+                                Image(nsImage: image).resizable().frame(width: 16, height: 16)
+                            } else {
+                                Image(systemName: "shippingbox")
+                            }
+                        }
                         Spacer()
                         if model.isRunning(bottle) {
                             Circle().fill(.green).frame(width: 7, height: 7).help("Çalışıyor")

@@ -30,8 +30,17 @@ struct InstallPage: View {
             .padding(EdgeInsets(top: 26, leading: 28, bottom: 28, trailing: 28))
         }
         .navigationTitle("Program kur")
+        .modifier(HideToolbarTitle())
+        .task(id: model.wantsSearchFocus) {
+            guard model.wantsSearchFocus else { return }
+            // Sayfa yeni açıldıysa alan odak alabilsin diye bir an bekle.
+            try? await Task.sleep(for: .milliseconds(50))
+            searchFocused = true
+            model.wantsSearchFocus = false
+        }
         .inspector(isPresented: .constant(true)) {
             InstallInspector()
+                .environment(\.isInstallSearchActive, searchFocused)
                 .inspectorColumnWidth(min: 300, ideal: 340, max: 420)
         }
         .onAppear {
@@ -58,7 +67,11 @@ struct InstallPage: View {
             TextField("Program ara", text: $query)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
-            if !query.isEmpty {
+                .onSubmit(selectFirstResult)
+                .onExitCommand { query = "" }
+            if query.isEmpty {
+                Text("⌘F").font(.caption).foregroundStyle(.tertiary)
+            } else {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain)
                     .foregroundStyle(.tertiary)
@@ -68,6 +81,13 @@ struct InstallPage: View {
         .padding(.horizontal, 10)
         .frame(height: 30)
         .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    /// Return: yalnızca ilk sonucu seçer; kurulum başlatmaz.
+    private func selectFirstResult() {
+        let sections = model.catalog.sections(matching: query, category: category)
+        if let first = sections.ready.first ?? sections.upcoming.first { model.selectEntry(first.id) }
+        searchFocused = false
     }
 
     private var chips: some View {
@@ -160,5 +180,16 @@ private struct CategoryChip: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Araç çubuğundaki yinelenen başlığı gizler (macOS 15+; 14'te başlık kalır).
+private struct HideToolbarTitle: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content.toolbar(removing: .title)
+        } else {
+            content
+        }
     }
 }

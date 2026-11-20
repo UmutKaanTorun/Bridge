@@ -10,5 +10,12 @@ struct KopruApp: App {
                 .environment(model)
                 .frame(minWidth: 1040, minHeight: 560)
         }
+        .commands {
+            // Düzen menüsündeki metin "Bul" grubu yerine: ⌘F Kur sayfasında arar.
+            CommandGroup(replacing: .textEditing) {
+                Button("Programlarda Ara") { model.focusSearch() }
+                    .keyboardShortcut("f")
+            }
+        }
     }
 }
