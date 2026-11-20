@@ -15,3 +15,10 @@ public struct Bottle: Identifiable, Hashable, Sendable {
     public var folderName: String { url.lastPathComponent }
     public var driveC: URL { url.appendingPathComponent("drive_c", isDirectory: true) }
 }
+
+public extension Array where Element == Bottle {
+    /// Tarifin kurulu olduğu bottle'lar (kopru.json'daki recipeId).
+    func withRecipe(_ id: String) -> [Bottle] {
+        filter { $0.info.recipeId == id }
+    }
+}
