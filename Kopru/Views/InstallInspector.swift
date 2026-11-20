@@ -249,11 +249,12 @@ struct InstallProgressPanel: View {
         VStack(alignment: .leading, spacing: 10) {
             InstallStepsList(progress: progress)
             if let message = progress.errorMessage {
+                // Panel altı ScrollView dışında: buradaki metne fixedSize(vertical:) verme. Pencerenin en küçük
+                // boyu ölçülürken metin sıfır genişlikte harf harf sarılıp uzar, tüm pencere içeriği yukarı kayar.
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             if progress.failedStep != nil {
                 failedActions
@@ -308,7 +309,6 @@ private struct TryAnywayActions: View {
                  : "Kurulum dosyan varsa hazır tarifi beklemeden genel ayarlarla deneyebilirsin.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
             Button(broken ? "Yine de dene…" : "Dosya seç…") { model.isPickingInstaller = true }
         }
     }
