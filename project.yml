@@ -25,6 +25,9 @@ targets:
       - path: Resources/RecipeFiles
         type: folder
         buildPhase: resources
+      - path: Resources/Catalog
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: KopruCore
     info:

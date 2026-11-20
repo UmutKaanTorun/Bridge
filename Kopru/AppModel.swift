@@ -1,6 +1,7 @@
 import AppKit
 import KopruCore
 import Observation
+import os
 
 /// Ekranda gösterilecek hata ya da uyarı.
 struct AppAlert: Identifiable {
@@ -40,6 +41,8 @@ struct InstallProgress: Identifiable {
     var isActive: Bool { !finished && failedStep == nil }
 }
 
+private let catalogLog = Logger(subsystem: "dev.kopru.Kopru", category: "katalog")
+
 @MainActor
 @Observable
 final class AppModel {
@@ -67,9 +70,17 @@ final class AppModel {
         store = BottleStore(paths: paths)
         let resources = Bundle.main.resourceURL ?? Bundle.main.bundleURL
         let recipeFiles = resources.appendingPathComponent("RecipeFiles", isDirectory: true)
-        catalog = (try? RecipeCatalog.load(recipesDirectory: resources.appendingPathComponent("Recipes", isDirectory: true),
-                                           filesDirectory: recipeFiles))
-            ?? RecipeCatalog(recipes: [], filesDirectory: recipeFiles)
+        do {
+            catalog = try RecipeCatalog.load(recipesDirectory: resources.appendingPathComponent("Recipes", isDirectory: true),
+                                             filesDirectory: recipeFiles,
+                                             upcomingFile: resources.appendingPathComponent("Catalog/upcoming.json"))
+        } catch {
+            catalogLog.error("Tarif klasörü okunamadı: \(error.localizedDescription, privacy: .public)")
+            catalog = RecipeCatalog(recipes: [], filesDirectory: recipeFiles)
+        }
+        for problem in catalog.problems {
+            catalogLog.error("Okunamayan katalog dosyası: \(problem, privacy: .public)")
+        }
         do {
             try Engine.checkRosetta()
             let engine = try Engine.locate(bundleResources: Bundle.main.resourceURL,
