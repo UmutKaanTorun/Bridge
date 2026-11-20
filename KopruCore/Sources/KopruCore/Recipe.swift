@@ -2,14 +2,81 @@ import Foundation
 
 /// Tarifin uyumluluk notu.
 public enum RecipeRating: String, Codable, Hashable, Sendable {
-    case works, partial, broken
+    case perfect, works, partial, broken
 
     public var label: String {
         switch self {
+        case .perfect: "Sorunsuz"
         case .works: "Çalışıyor"
         case .partial: "Kısmen çalışıyor"
-        case .broken: "Çalışmıyor"
+        case .broken: "Şimdilik çalışmıyor"
         }
+    }
+}
+
+/// Kur sayfasındaki kategori.
+public enum RecipeCategory: String, Codable, Hashable, Sendable, CaseIterable {
+    case game, business, engineering, office
+
+    public var label: String {
+        switch self {
+        case .game: "Oyun"
+        case .business: "İş ve muhasebe"
+        case .engineering: "Mühendislik"
+        case .office: "Ofis"
+        }
+    }
+
+    /// Simgesi olmayan programın yerine gösterilen SF Symbol.
+    public var symbolName: String {
+        switch self {
+        case .game: "gamecontroller"
+        case .business: "building.columns"
+        case .engineering: "ruler"
+        case .office: "doc.text"
+        }
+    }
+}
+
+/// Tarifin son test edildiği ortam.
+public struct RecipeTestInfo: Codable, Hashable, Sendable {
+    /// "yyyy-MM-dd"
+    public var date: String
+    public var hardware: String
+    public var macOS: String
+
+    public init(date: String, hardware: String, macOS: String) {
+        self.date = date
+        self.hardware = hardware
+        self.macOS = macOS
+    }
+
+    /// "20 Kas 2026 · Apple M3 · macOS 26.6"; tarih okunamazsa olduğu gibi yazılır.
+    public var summary: String {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = TimeZone(identifier: "UTC")
+        parser.dateFormat = "yyyy-MM-dd"
+        var day = date
+        if let parsed = parser.date(from: date) {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "tr_TR")
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            formatter.dateFormat = "d MMM yyyy"
+            day = formatter.string(from: parsed)
+        }
+        return "\(day) · \(hardware) · macOS \(macOS)"
+    }
+}
+
+/// Panelde "Köprü senin yerine ayarlar" altında bir madde. Tarifte gerçekten yapılan bir şeye karşılık gelmeli.
+public struct RecipeHighlight: Codable, Hashable, Sendable {
+    public var title: String
+    public var detail: String
+
+    public init(title: String, detail: String) {
+        self.title = title
+        self.detail = detail
     }
 }
 
@@ -100,7 +167,7 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var name: String
     public var summary: String
-    public var category: String
+    public var category: RecipeCategory
     public var rating: RecipeRating
     public var bottle: RecipeBottle
     public var installer: RecipeInstallerSpec
@@ -114,4 +181,12 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     public var detect: [String]
     /// Tarifin kendi başlatıcısı varken gizlenen Başlat menüsü kısayolları (Programs'a göre göreli).
     public var hideShortcuts: [String]
+    // Kur sayfası alanları; hepsi isteğe bağlı, eski tarifler bunlarsız da çözülür.
+    public var publisher: String?
+    /// Neyin çalışıp neyin çalışmadığını anlatan cümle.
+    public var verdict: String?
+    public var testedOn: RecipeTestInfo?
+    /// Ör. "2 MB, ilk açılışta …"
+    public var downloadNote: String?
+    public var highlights: [RecipeHighlight]?
 }

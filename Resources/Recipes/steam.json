@@ -2,9 +2,19 @@
   "schema": 1,
   "id": "steam",
   "name": "Steam",
-  "summary": "Valve'ın oyun mağazası ve başlatıcısı",
+  "publisher": "Valve",
+  "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
   "rating": "works",
+  "verdict": "Giriş, mağaza, kütüphane ve oyun indirme çalışıyor; denenen oyun açıldı. Oyun içi Steam katmanı kapalı.",
+  "testedOn": { "date": "2026-11-20", "hardware": "Apple M3", "macOS": "26.6" },
+  "downloadNote": "2 MB kurulum dosyası; ilk açılışta Steam kendini günceller (diskte yaklaşık 1,9 GB)",
+  "highlights": [
+    { "title": "Tarayıcı yardımcısı düzeltmesi", "detail": "Mağaza penceresi siyah açılmaz" },
+    { "title": "Sanal masaüstü", "detail": "Pencere sol üste yapışmaz, kesilmez" },
+    { "title": "Steam katmanı kapalı", "detail": "Oyun açılırken çökmeyi önler" },
+    { "title": "MSync açık", "detail": "Oyunlarda daha akıcı kare hızı" }
+  ],
   "bottle": {
     "defaultName": "Steam",
     "settings": { "msync": true, "virtualDesktop": { "mode": "auto" }, "fpsHud": false }

@@ -7,6 +7,9 @@ extension Recipe {
         id: String = "steam",
         name: String = "Steam",
         summary: String = "Oyun mağazası",
+        category: RecipeCategory = .game,
+        rating: RecipeRating = .works,
+        publisher: String? = nil,
         installerURL: URL = URL(string: "https://example.invalid/SteamSetup.exe")!,
         sha256: String? = nil,
         afterInstall: [RecipeAction] = [],
@@ -18,8 +21,8 @@ extension Recipe {
             id: id,
             name: name,
             summary: summary,
-            category: "game",
-            rating: .works,
+            category: category,
+            rating: rating,
             bottle: RecipeBottle(defaultName: name,
                                  settings: BottleSettings(msync: true, virtualDesktop: .auto, fpsHud: false)),
             installer: RecipeInstallerSpec(url: installerURL, sha256: sha256, fileName: "SteamSetup.exe", arguments: ["/S"]),
@@ -30,7 +33,8 @@ extension Recipe {
                                  arguments: ["-noverifyfiles", "-no-cef-sandbox"],
                                  shutdownArguments: ["-shutdown"]),
             detect: detect,
-            hideShortcuts: ["Steam/Steam.lnk"]
+            hideShortcuts: ["Steam/Steam.lnk"],
+            publisher: publisher
         )
     }
 }
