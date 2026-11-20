@@ -101,4 +101,15 @@ struct RecipeTests {
         #expect(RecipeTestInfo(date: "yakında", hardware: "Apple M3", macOS: "26.6").summary
                 == "yakında · Apple M3 · macOS 26.6")
     }
+
+    @Test func isInstalledChecksDetectFiles() throws {
+        let td = try TempDir()
+        let recipe = Recipe.fixture()
+        #expect(recipe.isInstalled(in: td.url) == false)
+        let exe = td.url.appendingPathComponent("drive_c/Program Files (x86)/Steam/steam.exe")
+        try FileManager.default.createDirectory(at: exe.deletingLastPathComponent(), withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: exe.path, contents: Data())
+        #expect(recipe.isInstalled(in: td.url))
+        #expect(Recipe.fixture(detect: []).isInstalled(in: try TempDir().url))
+    }
 }

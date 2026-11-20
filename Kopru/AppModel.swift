@@ -142,10 +142,10 @@ final class AppModel {
 
     var selectedEntry: CatalogEntry? { catalog.entry(id: selectedEntryID) }
 
-    /// Kartın tarifinin kurulu olduğu ilk bottle.
+    /// Kartın tarifinin kurulu olduğu ilk bottle (detect dosyaları var).
     func installedBottle(for entry: CatalogEntry) -> Bottle? {
         guard case let .recipe(recipe) = entry else { return nil }
-        return bottles.withRecipe(recipe.id).first
+        return bottles.withRecipe(recipe.id).first { recipe.isInstalled(in: $0.url) }
     }
 
     var selectedBottle: Bottle? { bottles.first { $0.id == selectedBottleID } }

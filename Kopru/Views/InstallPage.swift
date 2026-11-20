@@ -41,9 +41,9 @@ struct InstallPage: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            Text("Program kur").font(.largeTitle.bold())
+            Text("Program kur").font(.largeTitle.bold()).lineLimit(1)
             Spacer()
-            searchField.frame(width: 280)
+            searchField.frame(minWidth: 180, maxWidth: 280)
         }
     }
 

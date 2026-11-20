@@ -189,4 +189,10 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     /// Ör. "2 MB, ilk açılışta …"
     public var downloadNote: String?
     public var highlights: [RecipeHighlight]?
+
+    /// Tarif bu bottle'da kurulu mu? `detect` boşsa denetlenecek bir şey yoktur (kurulu sayılır);
+    /// doluysa her yol bottle'a göre var olmalı.
+    public func isInstalled(in bottleURL: URL) -> Bool {
+        detect.allSatisfy { FileManager.default.fileExists(atPath: bottleURL.appendingPathComponent($0).path) }
+    }
 }
