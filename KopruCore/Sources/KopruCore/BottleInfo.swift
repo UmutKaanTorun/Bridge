@@ -36,7 +36,8 @@ public struct BottleInfo: Codable, Hashable, Sendable {
                 hiddenShortcuts: [String] = []) {
         self.schema = 1
         self.name = name
-        self.createdAt = createdAt
+        // kopru.json tarihi saniye hassasiyetinde (ISO 8601) yazar; bellekteki değer de diskteki gibi olsun.
+        self.createdAt = Date(timeIntervalSince1970: createdAt.timeIntervalSince1970.rounded(.down))
         self.recipeId = recipeId
         self.settings = settings
         self.pinnedPrograms = pinnedPrograms
