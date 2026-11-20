@@ -64,11 +64,7 @@ public struct RecipeCatalog: Sendable {
 
     /// Bottle'da `detect` dosyalarının hepsi bulunan ilk tarif.
     public func detect(in bottleURL: URL) -> Recipe? {
-        recipes.first { recipe in
-            !recipe.detect.isEmpty && recipe.detect.allSatisfy {
-                FileManager.default.fileExists(atPath: bottleURL.appendingPathComponent($0).path)
-            }
-        }
+        recipes.first { !$0.detect.isEmpty && $0.isInstalled(in: bottleURL) }
     }
 
     // MARK: Kur sayfası

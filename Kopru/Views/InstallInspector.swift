@@ -243,7 +243,8 @@ struct InstallProgressPanel: View {
             }
             if progress.failedStep != nil {
                 failedActions
-            } else if progress.finished, let bottle = progress.bottle {
+            } else if progress.finished,
+                      let bottle = progress.bottle.flatMap({ snapshot in model.bottles.first { $0.id == snapshot.id } }) {
                 HStack {
                     Button("Bottle'a git") {
                         model.closeInstallPanel()

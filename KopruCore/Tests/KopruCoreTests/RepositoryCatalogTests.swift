@@ -42,4 +42,21 @@ struct RepositoryCatalogTests {
         #expect(Set(ids).count == ids.count)
         #expect(Set(try Self.load().recipes.map(\.id)).isDisjoint(with: ids))
     }
+
+    @Test func recipeIDsMatchFileNames() throws {
+        let folder = Self.resources.appendingPathComponent("Recipes")
+        let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "json" }
+        #expect(!files.isEmpty)
+        for file in files {
+            let recipe = try JSONDecoder().decode(Recipe.self, from: Data(contentsOf: file))
+            #expect(recipe.id == file.deletingPathExtension().lastPathComponent, "\(file.lastPathComponent): id dosya adıyla aynı olmalı")
+        }
+    }
+
+    @Test func everyRecipeHasDetectFiles() throws {
+        for recipe in try Self.load().recipes {
+            #expect(!recipe.detect.isEmpty, "\(recipe.id): detect boş; başarısız kurulum Kurulu görünür")
+        }
+    }
 }

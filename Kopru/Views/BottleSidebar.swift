@@ -9,8 +9,8 @@ struct BottleSidebar: View {
     @State private var importRequest: ImportRequest?
 
     var body: some View {
-        @Bindable var model = model
-        List(selection: $model.selection) {
+        // Boşluğa tıklamak seçimi silmesin (yoksa sayfa sessizce Kur'a döner).
+        List(selection: Binding(get: { model.selection }, set: { if let item = $0 { model.selection = item } })) {
             Label("Program kur", systemImage: "plus.circle")
                 .tag(SidebarItem.install)
             Section("Bottle'lar") {
@@ -41,6 +41,7 @@ struct BottleSidebar: View {
                         newBottleName = ""
                         askNewBottle = true
                     }
+                    .disabled(model.isInstallRunning)
                     Button("Bottle İçe Aktar…") { pickImportFolder = true }
                 } label: {
                     Image(systemName: "plus")

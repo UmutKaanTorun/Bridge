@@ -129,7 +129,7 @@ struct InstallPage: View {
                     CatalogCard(entry: entry,
                                 isSelected: model.unlistedFile == nil && model.selectedEntryID == entry.id)
                         .onTapGesture(count: 2) { openIfInstalled(entry) }
-                        .onTapGesture { model.selectEntry(entry.id) }
+                        .simultaneousGesture(TapGesture().onEnded { model.selectEntry(entry.id) })
                 }
             }
             .padding(.bottom, 26)

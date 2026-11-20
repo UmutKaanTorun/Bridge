@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @Environment(AppModel.self) private var model
     @State private var isDropTargeted = false
-    @State private var showSettings = false
+    @State private var settingsBottle: Bottle?
     @State private var pickExecutable = false
     @State private var executableToRun: URL?
 
@@ -19,7 +19,7 @@ struct ContentView: View {
                     handleDrop(urls)
                 } isTargeted: { isDropTargeted = $0 }
                 .overlay {
-                    if isDropTargeted { DropOverlay() }
+                    if isDropTargeted && model.isReady { DropOverlay() }
                 }
         }
         .toolbar { toolbar }
@@ -27,10 +27,8 @@ struct ContentView: View {
         .sheet(item: progressBinding) { _ in
             InstallProgressView()
         }
-        .sheet(isPresented: $showSettings) {
-            if let bottle = model.selectedBottle {
-                BottleSettingsSheet(bottle: bottle)
-            }
+        .sheet(item: $settingsBottle) { bottle in
+            BottleSettingsSheet(bottle: bottle)
         }
         .fileImporter(isPresented: $pickExecutable, allowedContentTypes: UTType.windowsInstallers) { result in
             if case let .success(url) = result { executableToRun = url }
@@ -65,7 +63,7 @@ struct ContentView: View {
 
     private func handleDrop(_ urls: [URL]) -> Bool {
         guard model.isReady else { return false }
-        guard let file = urls.first(where: { ["exe", "msi"].contains($0.pathExtension.lowercased()) }) else {
+        guard let file = urls.first(where: { $0.isFileURL && ["exe", "msi"].contains($0.pathExtension.lowercased()) }) else {
             model.alert = AppAlert(title: "Bu dosya kurulamaz",
                                    message: "Yalnızca .exe ve .msi kurulum dosyaları kurulabilir.")
             return false
@@ -97,7 +95,7 @@ struct ContentView: View {
                     .disabled(model.selectedBottle == nil || !model.isReady)
                 Button { model.stopSelected() } label: { Label("Durdur", systemImage: "stop.circle") }
                     .disabled(model.selectedBottle == nil || !model.isReady)
-                Button { showSettings = true } label: { Label("Ayarlar", systemImage: "gearshape") }
+                Button { settingsBottle = model.selectedBottle } label: { Label("Ayarlar", systemImage: "gearshape") }
                     .disabled(model.selectedBottle == nil)
             }
         }

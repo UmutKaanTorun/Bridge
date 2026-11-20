@@ -86,7 +86,7 @@ final class AppModel {
         wantsSearchFocus = true
     }
 
-    /// Seçili bottle; Kur sayfasındayken nil. Eski görünümler için yazılabilir.
+    /// Seçili bottle; Kur sayfasındayken nil.
     var selectedBottleID: Bottle.ID? {
         get { if case let .bottle(id) = selection { id } else { nil } }
         set { selection = newValue.map(SidebarItem.bottle) }
@@ -371,6 +371,7 @@ final class AppModel {
 
     func installRecipe(_ recipe: Recipe, bottleName: String) {
         guard let runner else { return }
+        guard !isInstallRunning else { return }
         install = InstallProgress(source: .recipe(recipe.id), title: "\(recipe.name) kuruluyor",
                                   steps: InstallStep.allCases, createsBottle: true)
         let installer = RecipeInstaller(factory: BottleFactory(store: store, runner: runner),
@@ -392,6 +393,7 @@ final class AppModel {
 
     func installUnlisted(file: URL, target: UnlistedTarget) {
         guard let runner else { return }
+        guard !isInstallRunning else { return }
         let createsBottle: Bool = if case .newBottle = target { true } else { false }
         install = InstallProgress(source: .unlisted(file),
                                   title: "\(file.lastPathComponent) kuruluyor",
@@ -430,6 +432,7 @@ final class AppModel {
 
     func createEmptyBottle(name: String) {
         guard let runner else { return }
+        guard !isInstallRunning else { return }
         install = InstallProgress(source: .emptyBottle, title: "\(name) oluşturuluyor", steps: [.preparing], createsBottle: true)
         Task {
             do {
@@ -534,6 +537,8 @@ final class AppModel {
             if let runner { await runner.stop(bottle, shutdown: shutdown) }
             do {
                 try store.delete(bottle)
+                // Paneldeki biten/başarısız kurulum bu bottle'ı gösteriyorsa kapanır.
+                if install?.bottle?.id == bottle.id, install?.isActive == false { closeInstallPanel() }
                 if selectedBottleID == bottle.id { selectedBottleID = nil }
                 reload()
             } catch {
