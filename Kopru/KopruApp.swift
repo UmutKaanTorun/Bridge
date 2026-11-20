@@ -8,7 +8,7 @@ struct KopruApp: App {
         WindowGroup("Köprü") {
             ContentView()
                 .environment(model)
-                .frame(minWidth: 780, minHeight: 480)
+                .frame(minWidth: 1040, minHeight: 560)
         }
     }
 }

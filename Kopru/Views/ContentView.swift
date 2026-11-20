@@ -4,13 +4,12 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    @State private var installStart: InstallSheet.Start?
+    @State private var unlistedStart: InstallSheet.Start?
     @State private var showSettings = false
     @State private var pickExecutable = false
     @State private var executableToRun: URL?
 
     var body: some View {
-        @Bindable var model = model
         NavigationSplitView {
             BottleSidebar()
                 .navigationSplitViewColumnWidth(min: 180, ideal: 210)
@@ -18,14 +17,14 @@ struct ContentView: View {
             detail
         }
         .toolbar { toolbar }
-        .onChange(of: model.selectedBottleID) { model.rescan() }
+        .onChange(of: model.selection) { model.rescan() }
         .dropDestination(for: URL.self) { urls, _ in
             guard model.isReady, let file = urls.first,
                   ["exe", "msi"].contains(file.pathExtension.lowercased()) else { return false }
-            installStart = .unlisted(file)
+            unlistedStart = .unlisted(file)
             return true
         }
-        .sheet(item: $installStart) { start in
+        .sheet(item: $unlistedStart) { start in
             InstallSheet(start: start)
         }
         .sheet(item: progressBinding) { _ in
@@ -61,9 +60,13 @@ struct ContentView: View {
         }
     }
 
-    /// İlerleme penceresi yalnızca Kur penceresi kapalıyken gösterilir (Kur'a basınca o kapanır, bu açılır).
+    /// Tarif kurulumları Kur sayfasının panelinde; diğerleri (listede olmayan, boş bottle) bu sheet'te.
     private var progressBinding: Binding<InstallProgress?> {
-        Binding(get: { installStart == nil ? model.install : nil },
+        Binding(get: {
+                    guard unlistedStart == nil, let progress = model.install else { return nil }
+                    if case .recipe = progress.source { return nil }
+                    return progress
+                },
                 set: { if $0 == nil { model.install = nil } })
     }
 
@@ -71,33 +74,28 @@ struct ContentView: View {
     private var detail: some View {
         if let problem = model.startupProblem {
             StartupProblemView(problem: problem)
-        } else if let bottle = model.selectedBottle {
+        } else if model.isBottlePage, let bottle = model.selectedBottle {
             ProgramGrid(bottle: bottle)
         } else {
-            ContentUnavailableView {
-                Label("Henüz bottle yok", systemImage: "shippingbox")
-            } description: {
-                Text("Kur'a bas ya da bir kurulum dosyasını (.exe, .msi) bu pencereye sürükle.")
-            } actions: {
-                Button("Program Kur") { installStart = .catalog }
-                    .disabled(!model.isReady)
-            }
+            InstallPage()
         }
     }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            Button { installStart = .catalog } label: { Label("Kur", systemImage: "plus.circle") }
-                .disabled(!model.isReady)
-            Button { model.openDriveC() } label: { Label("C: Sürücüsü", systemImage: "internaldrive") }
-                .disabled(model.selectedBottle == nil)
-            Button { pickExecutable = true } label: { Label("Program Çalıştır…", systemImage: "play") }
-                .disabled(model.selectedBottle == nil || !model.isReady)
-            Button { model.stopSelected() } label: { Label("Durdur", systemImage: "stop.circle") }
-                .disabled(model.selectedBottle == nil || !model.isReady)
-            Button { showSettings = true } label: { Label("Ayarlar", systemImage: "gearshape") }
-                .disabled(model.selectedBottle == nil)
+        if model.isBottlePage {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { model.showInstallPage() } label: { Label("Kur", systemImage: "plus.circle") }
+                    .disabled(!model.isReady)
+                Button { model.openDriveC() } label: { Label("C: Sürücüsü", systemImage: "internaldrive") }
+                    .disabled(model.selectedBottle == nil)
+                Button { pickExecutable = true } label: { Label("Program Çalıştır…", systemImage: "play") }
+                    .disabled(model.selectedBottle == nil || !model.isReady)
+                Button { model.stopSelected() } label: { Label("Durdur", systemImage: "stop.circle") }
+                    .disabled(model.selectedBottle == nil || !model.isReady)
+                Button { showSettings = true } label: { Label("Ayarlar", systemImage: "gearshape") }
+                    .disabled(model.selectedBottle == nil)
+            }
         }
     }
 }

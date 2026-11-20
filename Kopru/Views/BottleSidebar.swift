@@ -10,7 +10,9 @@ struct BottleSidebar: View {
 
     var body: some View {
         @Bindable var model = model
-        List(selection: $model.selectedBottleID) {
+        List(selection: $model.selection) {
+            Label("Program kur", systemImage: "plus.circle")
+                .tag(SidebarItem.install)
             Section("Bottle'lar") {
                 ForEach(model.bottles) { bottle in
                     HStack {
@@ -20,7 +22,7 @@ struct BottleSidebar: View {
                             Circle().fill(.green).frame(width: 7, height: 7).help("Çalışıyor")
                         }
                     }
-                    .tag(bottle.id)
+                    .tag(SidebarItem.bottle(bottle.id))
                 }
             }
         }
