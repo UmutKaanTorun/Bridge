@@ -44,4 +44,19 @@ public struct RecipeActionPerformer: Sendable {
             }
         }
     }
+
+    /// `isAlive` doğru olduğu sürece dosya eylemlerini `interval` aralıklarla yeniden uygular.
+    /// Wine çalıştıran eylemler (kayıt defteri) atlanır. Önce bekler, sonra denetler: çağrıldığı anda
+    /// başlatılan program henüz sayılmamış olabilir.
+    public func keepApplying(_ actions: [RecipeAction], recipe: Recipe, bottle: Bottle,
+                             every interval: Duration = .seconds(1),
+                             while isAlive: @Sendable () -> Bool) async {
+        let fileActions = actions.filter(\.isFileAction)
+        guard !fileActions.isEmpty else { return }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: interval)
+            guard isAlive() else { return }
+            try? await perform(fileActions, recipe: recipe, bottle: bottle)
+        }
+    }
 }

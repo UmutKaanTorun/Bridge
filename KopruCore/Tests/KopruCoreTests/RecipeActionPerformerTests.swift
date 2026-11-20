@@ -34,11 +34,48 @@ struct RecipeActionPerformerTests {
     @Test func proxyActionUsesRecipeFiles() async throws {
         let td = try TempDir()
         let (performer, bottle) = try setUp(td)
-        try td.file("RecipeFiles/steam/steamwebhelper.exe", "ARACI")
+        try td.file("RecipeFiles/steam/steamwebhelper.exe", data: proxyFixture())
         let helper = try td.file("AppSupport/Bottles/Steam/drive_c/Program Files (x86)/Steam/bin/cef/cef.win64/steamwebhelper.exe",
                                  data: Data(repeating: 2, count: 600_000))
         try await performer.perform([.steamWebHelperProxy], recipe: .fixture(), bottle: bottle)
-        #expect(try String(contentsOf: helper, encoding: .utf8) == "ARACI")
+        #expect(isPaddedProxy(helper, proxy: proxyFixture(), size: 600_000))
+    }
+
+    /// Steam açılışta kendini güncelleyip tarayıcı dosyalarını sonradan yazar; koruma onları yakalamalı.
+    @Test func keepApplyingReplacesHelperThatAppearsLater() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        try td.file("RecipeFiles/steam/steamwebhelper.exe", data: proxyFixture())
+        let alive = Collected<Bool>()
+        alive.add(true)
+        let guardTask = Task {
+            await performer.keepApplying([.steamWebHelperProxy, .registry(key: "HKCU\\A", name: "x", value: "y")],
+                                         recipe: .fixture(), bottle: bottle, every: .milliseconds(50),
+                                         while: { alive.all.last == true })
+        }
+        try await Task.sleep(for: .milliseconds(150))
+        let helper = try td.file("AppSupport/Bottles/Steam/drive_c/Program Files (x86)/Steam/bin/cef/cef.win64/steamwebhelper.exe",
+                                 data: Data(repeating: 3, count: 600_000))
+        var replaced = false
+        for _ in 0..<40 where !replaced {
+            try await Task.sleep(for: .milliseconds(50))
+            replaced = isPaddedProxy(helper, proxy: proxyFixture(), size: 600_000)
+        }
+        #expect(replaced)
+        alive.add(false)
+        await guardTask.value
+        // Kayıt defteri gibi Wine çalıştıran eylemler korumada tekrarlanmaz.
+        #expect(td.recordedLines().isEmpty)
+    }
+
+    @Test func keepApplyingStopsWhenBottleStops() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        let clock = ContinuousClock()
+        let started = clock.now
+        await performer.keepApplying([.steamWebHelperProxy], recipe: .fixture(), bottle: bottle,
+                                     every: .milliseconds(50), while: { false })
+        #expect(clock.now - started < .seconds(1))
     }
 
     @Test func missingProxyFileThrows() async throws {

@@ -19,6 +19,14 @@ public enum RecipeAction: Hashable, Sendable {
     case registry(key: String, name: String, value: String)
     /// Steam'in steamwebhelper.exe dosyasını Köprü'nün aracısıyla değiştirir.
     case steamWebHelperProxy
+
+    /// Yalnızca dosyalara dokunan, Wine çalıştırmayan eylemler; bottle çalışırken sık sık tekrarlanabilir.
+    public var isFileAction: Bool {
+        switch self {
+        case .registry: false
+        case .steamWebHelperProxy: true
+        }
+    }
 }
 
 extension RecipeAction: Codable {
@@ -71,6 +79,19 @@ public struct RecipeLaunch: Codable, Hashable, Sendable {
     public var arguments: [String]
     /// Doluysa "Durdur" önce programı bu argümanlarla çalıştırıp kibarca kapatır.
     public var shutdownArguments: [String]?
+    /// Bottle'a göre göreli dosya; yoksa program henüz ilk kurulumunu bitirmemiş sayılır
+    /// ve `firstRunArguments` ile açılır (ör. Steam istemcisi SteamUI.dll ilk açılışta indirilir).
+    public var readyFile: String?
+    public var firstRunArguments: [String]?
+
+    /// `readyFile` henüz yoksa ilk açılış argümanları, varsa normal argümanlar.
+    public func arguments(forBottleAt bottleURL: URL) -> [String] {
+        guard let readyFile, let firstRunArguments,
+              !FileManager.default.fileExists(atPath: bottleURL.appendingPathComponent(readyFile).path) else {
+            return arguments
+        }
+        return firstRunArguments
+    }
 }
 
 /// Bir programın tek tık kurulum tarifi (Resources/Recipes/<id>.json).
@@ -85,6 +106,9 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     public var installer: RecipeInstallerSpec
     public var afterInstall: [RecipeAction]
     public var beforeLaunch: [RecipeAction]
+    /// Bottle çalıştığı sürece saniyede bir yeniden uygulanan dosya eylemleri. Steam ilk açılışta ve her
+    /// güncellemede tarayıcı dosyalarını açılıştan sonra yeniden yazdığı için aracı ancak böyle yerinde kalır.
+    public var whileRunning: [RecipeAction]?
     public var launch: RecipeLaunch
     /// İçe aktarılan bottle'da bu dosyaların hepsi varsa bottle bu tarife bağlanır (bottle'a göre göreli).
     public var detect: [String]

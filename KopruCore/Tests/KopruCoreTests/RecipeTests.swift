@@ -24,6 +24,15 @@ struct RecipeTests {
         #expect(recipe.launch.arguments == ["-noverifyfiles", "-no-cef-sandbox"])
         #expect(recipe.launch.shutdownArguments == ["-shutdown"])
         #expect(recipe.hideShortcuts == ["Steam/Steam.lnk"])
+        #expect(recipe.whileRunning == [.steamWebHelperProxy])
+        #expect(recipe.launch.readyFile == "drive_c/Program Files (x86)/Steam/SteamUI.dll")
+        #expect(recipe.launch.firstRunArguments == ["-no-cef-sandbox"])
+    }
+
+    @Test func whileRunningIsOptional() throws {
+        let data = try JSONEncoder().encode(Recipe.fixture())
+        #expect(!String(decoding: data, as: UTF8.self).contains("whileRunning"))
+        #expect(try JSONDecoder().decode(Recipe.self, from: data).whileRunning == nil)
     }
 
     @Test func rejectsUnknownAction() {

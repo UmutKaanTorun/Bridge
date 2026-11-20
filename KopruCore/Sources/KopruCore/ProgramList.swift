@@ -24,11 +24,13 @@ public struct ProgramItem: Identifiable, Hashable, Sendable {
 public enum ProgramList {
     /// Sıra: tarif başlatıcısı, sabitlenenler, kısayollar.
     /// Steam oyunu kısayolları, tarif varsa tarifin başlatıcısıyla açılır (aracı ve seçenekler atlanmasın).
-    public static func items(recipeLaunch: RecipeLaunch?, pinned: [PinnedProgram], shortcuts: [ShortcutProgram]) -> [ProgramItem] {
+    public static func items(recipeLaunch: RecipeLaunch?, pinned: [PinnedProgram], shortcuts: [ShortcutProgram],
+                             bottleURL: URL) -> [ProgramItem] {
         var items: [ProgramItem] = []
+        let recipeArguments = recipeLaunch?.arguments(forBottleAt: bottleURL) ?? []
         if let launch = recipeLaunch {
             items.append(ProgramItem(name: launch.name, source: .recipe(launch),
-                                     target: .windowsPath(launch.windowsPath, arguments: launch.arguments)))
+                                     target: .windowsPath(launch.windowsPath, arguments: recipeArguments)))
         }
         for program in pinned {
             items.append(ProgramItem(name: program.name, source: .pinned(program),
@@ -37,7 +39,7 @@ public enum ProgramList {
         for shortcut in shortcuts {
             let target: LaunchTarget
             if case let .steamURL(url) = shortcut.kind, let launch = recipeLaunch {
-                target = .windowsPath(launch.windowsPath, arguments: launch.arguments + [url])
+                target = .windowsPath(launch.windowsPath, arguments: recipeArguments + [url])
             } else {
                 target = .shortcut(shortcut.url)
             }

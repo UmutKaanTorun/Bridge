@@ -10,9 +10,10 @@ struct ProgramListTests {
     let notepad = ShortcutProgram(name: "Notepad++", relativePath: "Notepad++.lnk",
                                   url: URL(fileURLWithPath: "/B/Notepad++.lnk"), kind: .link)
     let pinned = PinnedProgram(name: "Araç", windowsPath: "C:\\arac.exe", arguments: ["-x"])
+    let bottleURL = URL(fileURLWithPath: "/olmayan/bottle")
 
     @Test func orderIsRecipeThenPinnedThenShortcuts() {
-        let items = ProgramList.items(recipeLaunch: steamLaunch, pinned: [pinned], shortcuts: [notepad, game])
+        let items = ProgramList.items(recipeLaunch: steamLaunch, pinned: [pinned], shortcuts: [notepad, game], bottleURL: bottleURL)
         #expect(items.map(\.name) == ["Steam", "Araç", "Notepad++", "Thief"])
         #expect(Set(items.map(\.id)).count == 4)
         #expect(items[0].target == .windowsPath("C:\\Steam\\steam.exe", arguments: ["-noverifyfiles", "-no-cef-sandbox"]))
@@ -21,13 +22,30 @@ struct ProgramListTests {
     }
 
     @Test func steamGamesLaunchThroughRecipe() {
-        let items = ProgramList.items(recipeLaunch: steamLaunch, pinned: [], shortcuts: [game])
+        let items = ProgramList.items(recipeLaunch: steamLaunch, pinned: [], shortcuts: [game], bottleURL: bottleURL)
         #expect(items.last?.target == .windowsPath("C:\\Steam\\steam.exe",
                                                    arguments: ["-noverifyfiles", "-no-cef-sandbox", "steam://rungameid/2272420"]))
     }
 
     @Test func steamGamesWithoutRecipeOpenAsShortcut() {
-        let items = ProgramList.items(recipeLaunch: nil, pinned: [], shortcuts: [game])
+        let items = ProgramList.items(recipeLaunch: nil, pinned: [], shortcuts: [game], bottleURL: bottleURL)
         #expect(items.map(\.target) == [.shortcut(URL(fileURLWithPath: "/B/Thief.url"))])
+    }
+
+    /// İstemci (SteamUI.dll) henüz yoksa Steam ilk açılış argümanlarıyla (doğrulama açık) başlar.
+    @Test func recipeUsesFirstRunArgumentsUntilReadyFileExists() throws {
+        let td = try TempDir()
+        let bottle = try td.dir("bottle")
+        var launch = steamLaunch
+        launch.readyFile = "drive_c/Program Files (x86)/Steam/SteamUI.dll"
+        launch.firstRunArguments = ["-no-cef-sandbox"]
+
+        let first = ProgramList.items(recipeLaunch: launch, pinned: [], shortcuts: [], bottleURL: bottle)
+        #expect(first.first?.target == .windowsPath("C:\\Steam\\steam.exe", arguments: ["-no-cef-sandbox"]))
+        #expect(launch.arguments(forBottleAt: bottle) == ["-no-cef-sandbox"])
+
+        try td.file("bottle/drive_c/Program Files (x86)/Steam/SteamUI.dll")
+        let later = ProgramList.items(recipeLaunch: launch, pinned: [], shortcuts: [], bottleURL: bottle)
+        #expect(later.first?.target == .windowsPath("C:\\Steam\\steam.exe", arguments: ["-noverifyfiles", "-no-cef-sandbox"]))
     }
 }

@@ -53,6 +53,8 @@ final class AppModel {
     var selectedBottleID: Bottle.ID?
     private(set) var shortcuts: [ShortcutProgram] = []
     private(set) var runningCounts: [Bottle.ID: Int] = [:]
+    /// `whileRunning` koruması çalışan bottle'lar (bottle başına tek görev).
+    @ObservationIgnored private var guardedBottles: Set<Bottle.ID> = []
     var alert: AppAlert?
     var install: InstallProgress?
 
@@ -99,7 +101,8 @@ final class AppModel {
         guard let bottle = selectedBottle else { return [] }
         return ProgramList.items(recipeLaunch: recipe(for: bottle)?.launch,
                                  pinned: bottle.info.pinnedPrograms,
-                                 shortcuts: shortcuts)
+                                 shortcuts: shortcuts,
+                                 bottleURL: bottle.url)
     }
 
     func isRunning(_ bottle: Bottle) -> Bool { (runningCounts[bottle.id] ?? 0) > 0 }
@@ -159,6 +162,7 @@ final class AppModel {
             do {
                 if let recipe {
                     try await actions.perform(recipe.beforeLaunch, recipe: recipe, bottle: bottle)
+                    startGuard(recipe: recipe, bottle: bottle, runner: runner, actions: actions)
                 }
                 let result = try await runner.run(target, in: bottle, desktopSize: desktopSize)
                 if result.exitCode != 0 && result.duration < 5 {
@@ -169,6 +173,21 @@ final class AppModel {
             } catch {
                 show("\(name) açılamadı", error, log: bottle)
             }
+        }
+    }
+
+    /// Tarifin `whileRunning` eylemlerini, bottle'da Wine çalıştığı sürece yeniden uygular.
+    /// Köprü'nün başlattığı süreç bitse bile (ör. Steam kendini yeniden başlatınca) wineserver açık
+    /// olduğu sürece devam eder.
+    private func startGuard(recipe: Recipe, bottle: Bottle, runner: WineRunner, actions: RecipeActionPerformer) {
+        guard let whileRunning = recipe.whileRunning, !whileRunning.isEmpty, !guardedBottles.contains(bottle.id) else { return }
+        guardedBottles.insert(bottle.id)
+        let prefix = bottle.url
+        Task {
+            await actions.keepApplying(whileRunning, recipe: recipe, bottle: bottle, while: {
+                runner.isRunning(bottle) || WineServerStatus.isRunning(prefix: prefix)
+            })
+            guardedBottles.remove(bottle.id)
         }
     }
 

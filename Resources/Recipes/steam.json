@@ -21,11 +21,16 @@
   "beforeLaunch": [
     { "action": "steamWebHelperProxy" }
   ],
+  "whileRunning": [
+    { "action": "steamWebHelperProxy" }
+  ],
   "launch": {
     "name": "Steam",
     "windowsPath": "C:\\Program Files (x86)\\Steam\\steam.exe",
     "arguments": ["-noverifyfiles", "-no-cef-sandbox"],
-    "shutdownArguments": ["-shutdown"]
+    "shutdownArguments": ["-shutdown"],
+    "readyFile": "drive_c/Program Files (x86)/Steam/SteamUI.dll",
+    "firstRunArguments": ["-no-cef-sandbox"]
   },
   "detect": ["drive_c/Program Files (x86)/Steam/steam.exe"],
   "hideShortcuts": ["Steam/Steam.lnk"]
