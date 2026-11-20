@@ -25,16 +25,18 @@ public final class WineRunner: @unchecked Sendable {
     }
 
     /// Programı başlatır ve bitmesini bekler.
+    /// `appName`: Dock'ta "wine" yerine görünecek ad; programın açtığı alt süreçler de devralır.
     public func run(_ target: LaunchTarget, in bottle: Bottle, desktopSize: PixelSize? = nil,
-                    extraEnvironment: [String: String] = [:]) async throws -> RunResult {
+                    appName: String? = nil, extraEnvironment: [String: String] = [:]) async throws -> RunResult {
         let desktop = desktopSize.map { DesktopWindow(name: "Kopru-\(bottle.folderName)", size: $0) }
         let arguments = WineArguments.arguments(for: target, desktop: desktop)
 
         let process = Process()
         process.executableURL = engine.wine
         process.arguments = arguments
-        process.environment = engine.environment(prefix: bottle.url, settings: bottle.info.settings, base: baseEnvironment)
-            .merging(extraEnvironment) { _, new in new }
+        var environment = engine.environment(prefix: bottle.url, settings: bottle.info.settings, base: baseEnvironment)
+        environment[Engine.appNameVariable] = appName
+        process.environment = environment.merging(extraEnvironment) { _, new in new }
         if case let .unixFile(file, _) = target {
             process.currentDirectoryURL = file.deletingLastPathComponent()
         } else {

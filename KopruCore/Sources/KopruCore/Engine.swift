@@ -30,6 +30,12 @@ public struct Engine: Sendable, Equatable {
 
     public static let rosettaRuntimePath = "/Library/Apple/usr/libexec/oah/libRosettaRuntime"
 
+    /// Dock, Wine süreçlerini çalışan dosyanın adıyla ("wine") gösterir; sonradan ad değiştirmeyi
+    /// (LSDisplayName, CPSSetProcessName) dikkate almaz. Motor (ntdll, Köprü yaması) bu değişken
+    /// varken her Windows sürecini yükleyicinin bu adı taşıyan bir bağlantısından başlatır
+    /// ($TMPDIR/winetemp-…/<ad>, CrossOver Hack 22144). Yama: Tools/motor-yamalari/ntdll-dock-adi.patch
+    public static let appNameVariable = "KOPRU_APP_NAME"
+
     public static func isValid(_ root: URL) -> Bool {
         FileManager.default.isExecutableFile(atPath: root.appendingPathComponent("bin/wine").path)
     }

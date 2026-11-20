@@ -146,7 +146,7 @@ final class AppModel {
                 save(bottle)
             }
         }
-        start(.unixFile(file, arguments: []), name: file.lastPathComponent, in: bottle, runner: runner)
+        start(.unixFile(file, arguments: []), name: file.deletingPathExtension().lastPathComponent, in: bottle, runner: runner)
     }
 
     private func start(_ target: LaunchTarget, name: String, in bottle: Bottle, runner: WineRunner) {
@@ -164,7 +164,7 @@ final class AppModel {
                     try await actions.perform(recipe.beforeLaunch, recipe: recipe, bottle: bottle)
                     startGuard(recipe: recipe, bottle: bottle, runner: runner, actions: actions)
                 }
-                let result = try await runner.run(target, in: bottle, desktopSize: desktopSize)
+                let result = try await runner.run(target, in: bottle, desktopSize: desktopSize, appName: name)
                 if result.exitCode != 0 && result.duration < 5 {
                     alert = AppAlert(title: "\(name) hemen kapandı",
                                      message: "Program açıldıktan hemen sonra kapandı (çıkış kodu \(result.exitCode)). Ayrıntılar günlük dosyasında.",
@@ -275,7 +275,8 @@ final class AppModel {
                 }
                 guard let bottle else { return }
                 apply(.started(.installing))
-                let result = try await runner.run(.unixFile(file, arguments: []), in: bottle)
+                let result = try await runner.run(.unixFile(file, arguments: []), in: bottle,
+                                                  appName: file.deletingPathExtension().lastPathComponent)
                 guard result.exitCode == 0 else {
                     throw InstallFailure(step: .installing, bottle: bottle,
                                          underlying: InstallError.installerFailed(exitCode: result.exitCode))

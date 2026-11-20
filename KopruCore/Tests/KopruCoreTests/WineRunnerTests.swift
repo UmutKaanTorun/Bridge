@@ -50,6 +50,16 @@ struct WineRunnerTests {
         #expect(lines.dropFirst().first?.contains("WINEMSYNC=0") == true)
     }
 
+    /// Motor bu adı Dock'ta "wine" yerine gösterir; Steam'in alt süreçleri de devralır.
+    @Test func passesAppNameForDock() async throws {
+        let td = try TempDir()
+        let (runner, bottle) = try setUp(td, ["KOPRU_APP_NAME": "eski"])
+        _ = try await runner.run(.windowsPath("C:\\Steam\\steam.exe", arguments: []), in: bottle, appName: "Steam")
+        _ = try await runner.run(.builtin("reg", arguments: []), in: bottle)
+        let names = td.recordedLines().filter { $0.hasPrefix("KOPRU_APP_NAME=") }
+        #expect(names == ["KOPRU_APP_NAME=Steam"])
+    }
+
     @Test func tracksRunningProcesses() async throws {
         let td = try TempDir()
         let (runner, bottle) = try setUp(td, ["UYKU": "1"])

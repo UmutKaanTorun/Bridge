@@ -47,7 +47,8 @@ public struct RecipeInstaller: Sendable {
             }
         }
         try await step(.installing, bottle, onEvent) {
-            let result = try await runner.run(.unixFile(installerFile, arguments: recipe.installer.arguments), in: bottle)
+            let result = try await runner.run(.unixFile(installerFile, arguments: recipe.installer.arguments), in: bottle,
+                                              appName: recipe.name)
             guard result.exitCode == 0 else { throw InstallError.installerFailed(exitCode: result.exitCode) }
         }
         try await step(.configuring, bottle, onEvent) {

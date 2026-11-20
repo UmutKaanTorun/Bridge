@@ -34,7 +34,9 @@ struct RecipeInstallerTests {
                           .started(.installing), .finished(.installing),
                           .started(.configuring), .finished(.configuring)])
 
-        let commands = td.recordedLines().filter { !$0.hasPrefix("WINEPREFIX=") }
+        // Kurulum penceresi Dock'ta tarifin adıyla görünür; yalnızca kurulum programına verilir.
+        #expect(td.recordedLines().filter { $0.hasPrefix("KOPRU_APP_NAME=") } == ["KOPRU_APP_NAME=Steam"])
+        let commands = td.recordedLines().filter { !$0.hasPrefix("WINEPREFIX=") && !$0.hasPrefix("KOPRU_APP_NAME=") }
         #expect(commands.count == 4)
         #expect(commands[0] == "wine wineboot --init")
         // Kayıt defteri ancak wineserver kapanınca diske yazılır; bottle tamamlanmış sayılmadan beklenir.

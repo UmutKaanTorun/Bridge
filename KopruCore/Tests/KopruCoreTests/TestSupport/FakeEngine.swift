@@ -10,6 +10,7 @@ extension TempDir {
         #!/bin/sh
         printf '%s %s\\n' "$(basename "$0")" "$*" >> "$KAYIT"
         printf 'WINEPREFIX=%s WINEMSYNC=%s PWD=%s\\n' "$WINEPREFIX" "$WINEMSYNC" "$(pwd)" >> "$KAYIT"
+        if [ -n "${KOPRU_APP_NAME+x}" ]; then printf 'KOPRU_APP_NAME=%s\\n' "$KOPRU_APP_NAME" >> "$KAYIT"; fi
         echo "sahte cikti"
         if [ -n "$HATALI" ]; then case "$*" in *"$HATALI"*) exit 7 ;; esac; fi
         if [ -n "$UYKU" ]; then sleep "$UYKU"; fi

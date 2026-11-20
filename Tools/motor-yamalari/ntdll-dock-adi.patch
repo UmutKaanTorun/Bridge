@@ -1,0 +1,36 @@
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -629,11 +629,23 @@
+ fail:
+     free(linkpath);
+     return NULL;
++}
++
++/* Köprü yaması: Dock, Windows programının sürecini çalışan dosyanın adıyla gösterir.
++ * Köprü programı açarken adını KOPRU_APP_NAME'e yazar; bağlantı exe adı yerine bu adla
++ * oluşturulur ve programın açtığı alt süreçler (ör. Steam arayüzünü çizen steamwebhelper)
++ * de aynı adı alır. */
++static char *kopru_app_name(void)
++{
++    const char *name = getenv("KOPRU_APP_NAME");
++    if (!name || !*name || strchr(name, '/') || !strcmp(name, ".") || !strcmp(name, "..")) return NULL;
++    return strdup(name);
+ }
+ 
+ static void replace_wineloader_path_with_link(char **wineloader_path, const char *image_path)
+ {
+-    char *app_name = extract_exe_name(image_path);
++    char *app_name = kopru_app_name(); /* Köprü yaması */
++    if (!app_name) app_name = extract_exe_name(image_path);
+     if (app_name)
+     {
+         char *preloader_path = create_preloader_link(*wineloader_path, app_name);
+@@ -679,7 +691,7 @@
+      * When the preloader is not being used, WINEDLLPATH needs to be set correctly for
+      * the loader to find ntdll.so, so don't even attempt this unless WINEDLLPATH is set.
+      */
+-    if (getenv("WINEDLLPATH"))
++    if (getenv("WINEDLLPATH") || getenv("KOPRU_APP_NAME")) /* Köprü yaması: KOPRU_APP_NAME */
+         replace_wineloader_path_with_link( &(argv[1]), image_path );
+ #endif
+ 
