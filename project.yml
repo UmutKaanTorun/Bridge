@@ -1,0 +1,64 @@
+name: Kopru
+options:
+  bundleIdPrefix: dev.kopru
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: tr
+  createIntermediateGroups: true
+packages:
+  KopruCore:
+    path: KopruCore
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Kopru:
+    type: application
+    platform: macOS
+    sources:
+      - path: Kopru
+      - path: Resources/Recipes
+        type: folder
+        buildPhase: resources
+      - path: Resources/RecipeFiles
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: KopruCore
+    info:
+      path: Kopru/Info.plist
+      properties:
+        CFBundleName: Köprü
+        CFBundleDisplayName: Köprü
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.utilities
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+    settings:
+      base:
+        PRODUCT_NAME: Kopru
+        PRODUCT_BUNDLE_IDENTIFIER: dev.kopru.Kopru
+        ARCHS: arm64
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    postBuildScripts:
+      - name: Motoru pakete kopyala (yalnızca Release)
+        path: Scripts/bundle-engine.sh
+        basedOnDependencyAnalysis: false
+schemes:
+  Kopru:
+    build:
+      targets:
+        Kopru: all
+    run:
+      config: Debug
+    archive:
+      config: Release
