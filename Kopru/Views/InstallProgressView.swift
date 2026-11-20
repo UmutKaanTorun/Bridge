@@ -1,7 +1,7 @@
 import KopruCore
 import SwiftUI
 
-/// Adım adım kurulum ilerlemesi; durumu `model.install`'dan okur.
+/// Sheet olarak adım adım kurulum ilerlemesi; durumu `model.install`'dan okur.
 struct InstallProgressView: View {
     @Environment(AppModel.self) private var model
 
@@ -17,20 +17,7 @@ struct InstallProgressView: View {
     private func content(_ progress: InstallProgress) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(progress.title).font(.title2.bold())
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(progress.steps, id: \.self) { step in
-                    HStack(spacing: 10) {
-                        icon(for: step, in: progress).frame(width: 18)
-                        Text(step.title)
-                        if step == .downloading, progress.current == .downloading, let fraction = progress.fraction {
-                            ProgressView(value: fraction).frame(width: 140)
-                            Text(fraction, format: .percent.precision(.fractionLength(0)))
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
+            InstallStepsList(progress: progress)
             if let message = progress.errorMessage {
                 Text(message).foregroundStyle(.red).textSelection(.enabled)
             }
@@ -55,19 +42,6 @@ struct InstallProgressView: View {
                     Text("Kurulum sürüyor…").foregroundStyle(.secondary)
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private func icon(for step: InstallStep, in progress: InstallProgress) -> some View {
-        if progress.failedStep == step {
-            Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
-        } else if progress.done.contains(step) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-        } else if progress.current == step {
-            ProgressView().controlSize(.small)
-        } else {
-            Image(systemName: "circle").foregroundStyle(.tertiary)
         }
     }
 }

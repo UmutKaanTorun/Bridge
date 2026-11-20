@@ -88,6 +88,8 @@ final class AppModel {
     /// Programların exe'den çıkarılan simgeleri. Bulunamayanlar saklanmaz: program sonradan
     /// kurulunca (ör. Steam ilk açılışta) simgesi bir sonraki gösterimde gelir.
     @ObservationIgnored private var iconCache: [String: NSImage] = [:]
+    /// Tarif simgeleri (RecipeFiles/<id>/icon.png); bir kez okunur.
+    @ObservationIgnored private var recipeIconCache: [String: NSImage] = [:]
     var alert: AppAlert?
     var install: InstallProgress?
 
@@ -195,6 +197,15 @@ final class AppModel {
         }.value
         guard let data, let image = NSImage(data: data) else { return nil }
         iconCache[key] = image
+        return image
+    }
+
+    /// Kartın tarif simgesi; "Yakında" girdilerinde ve simgesi olmayan tarifte nil.
+    func recipeIcon(for entry: CatalogEntry) -> NSImage? {
+        guard case let .recipe(recipe) = entry else { return nil }
+        if let cached = recipeIconCache[recipe.id] { return cached }
+        guard let url = catalog.iconURL(for: recipe.id), let image = NSImage(contentsOf: url) else { return nil }
+        recipeIconCache[recipe.id] = image
         return image
     }
 
