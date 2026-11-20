@@ -40,13 +40,14 @@ Kullanıcı bir Windows programını Köprü'ye kurmaya karar verirken üç soru
 
 | Konu | Karar |
 |---|---|
-| Yer | Ana pencerenin detay sütununda bir sayfa. Kenar çubuğu seçimi `enum SidebarItem { case install, bottle(Bottle.ID) }`. `InstallSheet` ve `InstallProgressView` sheet'leri kalkar. |
+| Yer | Ana pencerenin detay sütununda bir sayfa. Kenar çubuğu seçimi `enum SidebarItem { case install, bottle(Bottle.ID) }`. `InstallSheet` kalkar; `InstallProgressView` yalnızca kenar çubuğundaki "Boş Bottle…" için (o akış bu sayfanın dışında) sheet olarak kalır. |
+| Pencere | En küçük boyut 1040 × 560 pt (kenar çubuğu + iki sütunlu ızgara + 340 pt panel sığsın; v0.1'de 780 × 480). |
 | Sağ panel | SwiftUI `.inspector` (macOS 14+), yalnızca bu sayfada ve her zaman açık; genişlik 300–420 pt, varsayılan 340. Bottle sayfalarında yok. |
 | Başlık ve arama | İçerikte büyük başlık "Program kur" ve aynı satırın sağında 280 pt arama alanı (`TextField` + `@FocusState`). Pencere başlığı `navigationTitle("Program kur")` ile Mission Control'de görünür, araç çubuğunda gizlenir (`.toolbar(removing: .title)`). `.searchable` kullanılmaz: macOS 14'te ⌘F ile odaklama (`searchFocused`) yok. |
 | ⌘F | Düzen menüsüne "Programlarda Ara" komutu (⌘F); seçim Program kur'a geçer ve arama odaklanır. |
 | Uyumluluk etiketleri | `RecipeRating`'e `perfect` eklenir. Etiketler: `perfect` **Sorunsuz** (yeşil), `works` **Çalışıyor** (camgöbeği), `partial` **Kısmen çalışıyor** (turuncu), `broken` **Şimdilik çalışmıyor** (kırmızı). Tarifi olmayan "Yakında" girdileri için ayrıca **Test ediliyor** (gri). |
 | Kategoriler | `RecipeCategory`: `game` Oyun, `business` İş ve muhasebe, `engineering` Mühendislik, `office` Ofis. Hiç programı olmayan kategori kapsülü gizlenir. |
-| Simgeler | `RecipeFiles/<id>/icon.png` (512 px, programın kendi simgesi) varsa o; yoksa kategoriye göre SF Symbol (gamecontroller, building.columns, ruler, doc.text) nötr kutuda. Taslaktaki harfli renkli kutular yer tutucuydu. |
+| Simgeler | `RecipeFiles/<id>/icon.png` (programın kendi simgesinin en büyük boyutu, genelde 256 px; `Tools/tarif-simgesi` ile exe'den çıkarılır) varsa o; yoksa kategoriye göre SF Symbol (gamecontroller, building.columns, ruler, doc.text) nötr kutuda. Taslaktaki harfli renkli kutular yer tutucuydu. |
 | "Yakında" verisi | Tarif olmadan, ayrı bir dosyada: `Resources/Catalog/upcoming.json`. Kaynağı Sheets'teki 20 programlık test listesi (tarifi olanlar hariç). |
 | "Haber ver" | **Bu sürüme girmez.** Sunucu (Supabase) ister; Faz 2'de. "Yakında" panelinde onun yerine "Kurulum dosyan varsa dene" yolu var. |
 | Eşzamanlı kurulum | Bir anda bir kurulum (v0.1'deki gibi). Sürerken diğer kartların panelinde **Kur** yerine "Önce süren kurulum bitsin." yazar. |
@@ -94,7 +95,7 @@ Hepsi isteğe bağlı; eski tarifler çözülmeye devam eder (`schema` 1 kalır)
 
 ```json
 [
-  { "id": "epic", "name": "Epic Games Store", "publisher": "Epic Games",
+  { "id": "epic", "name": "Epic Games Launcher", "publisher": "Epic Games",
     "summary": "Oyun mağazası ve başlatıcısı", "category": "game", "status": "broken",
     "note": "Başlatıcı ilk kurulumda takılıyor. Yeni motor sürümüyle yeniden deneniyor." },
   { "id": "gog-galaxy", "name": "GOG Galaxy", "publisher": "GOG",
@@ -102,10 +103,10 @@ Hepsi isteğe bağlı; eski tarifler çözülmeye devam eder (`schema` 1 kalır)
 ]
 ```
 
-- `status`: `testing` (Test ediliyor) ya da `broken` (Şimdilik çalışmıyor). `note` isteğe bağlı.
+- `status`: `testing` (Test ediliyor) ya da `broken` (Şimdilik çalışmıyor). `publisher` ve `note` isteğe bağlı; yayıncısından emin olunmayan girdide `publisher` yazılmaz.
 - Bir `id` hem tarif hem "Yakında" olarak varsa tarif kazanır, "Yakında" girdisi gösterilmez (tarif eklenince listeden silmeyi unutmak zarar vermez).
 - Dosya yoksa ya da bozuksa "Yakında" bölümü gizlenir, günlüğe yazılır.
-- İçerik Sheets'teki test listesinden alınır. Taslaktaki adlar (Logo Go 3, ETA:SQL, Mikro Jump, Matriks, NetCAD, ideCAD) yer tutucudur; ürün adları ve yayıncılar listeden doğrulanır.
+- İçerik Sheets'teki test listesinden alınır (Faz 0 Test Listesi, "Testler" sayfası). Kurulabilir programlar girer: Epic Games Launcher, GOG Galaxy, Logo Go 3 / Tiger, ETA:SQL, Mikro, Excel 2016, Matriks, NetCAD, ideCAD Statik. Steam'den kurulan oyunlar (Bannerlord, Age of Empires II, Skyrim, GTA V, Counter-Strike 2, Thief Simulator 2 vb.) girmez, onları Steam kurar; belirli bir ürün adı olmayan "E-imza programı" da girmez. Taslaktaki Battle.net ve "Mikro Jump" listede yoktu, çıkarıldı.
 
 ### 3.3 Yeni tarifler
 
@@ -122,8 +123,9 @@ Etiket ve `verdict`, Köprü'deki testten sonra yazılır; test geçmeden tarif 
 - `RecipeRating.perfect`; `broken` etiketi "Şimdilik çalışmıyor".
 - `RecipeCategory` (`label`, `symbolName`).
 - `UpcomingProgram` ve `UpcomingStatus`.
-- `RecipeCatalog`: dosya dosya okuma (bozuk dosyayı atla), `upcoming` listesi, `search(_:category:)` (ad, özet, yayıncı; büyük/küçük harf, aksan ve Türkçe `ı`/`i` duyarsız; `nil` kategori hepsi).
-- `BottleStore` ya da `AppModel` düzeyinde: `bottles(installing recipeId:) -> [Bottle]` (tarifin kurulu olduğu bottle'lar, `recipeId` eşleşmesi).
+- `CatalogEntry` (`recipe` / `upcoming`) ve `CatalogSections` (`ready`, `upcoming`).
+- `RecipeCatalog`: dosya dosya okuma (bozuk dosyayı atla, `problems`'a yaz), `upcoming` listesi, `sections(matching:category:)` (ad, özet, yayıncı; büyük/küçük harf, aksan ve Türkçe `ı`/`i` duyarsız; `nil` kategori hepsi), `count(in:)`, `categories`, `entry(id:)`, `iconURL(for:)`. v0.1'deki `search(_:)` kalkar.
+- `[Bottle].withRecipe(_ id: String) -> [Bottle]` (tarifin kurulu olduğu bottle'lar, `recipeId` eşleşmesi).
 
 ## 4. Ekran
 
@@ -200,7 +202,8 @@ v0.1 tablosu geçerli; ekler:
   - Bozuk bir `.json` kataloğu boşaltmaz.
   - `upcoming.json` çözülür; tarifle aynı `id`'ye sahip girdi elenir; dosya yoksa liste boş.
   - Arama: ad, özet, yayıncı; "NOTEPAD" ~ "Notepad++", "valve" ~ "Valve", "baslaticisi" ~ "başlatıcısı" (ş ve ı), "arsivleme" ~ "Arşivleme"; kategori süzgeci aramayla birlikte.
-  - `bottles(installing:)`: `recipeId` eşleşen bottle'lar.
+  - `withRecipe(_:)`: `recipeId` eşleşen bottle'lar.
+  - Depodaki her tarif çözülür; yayıncı, açıklama ve test bilgisi dolu; `broken` olmayanların `icon.png`'si var. Depodaki `upcoming.json` çözülür ve tariflerle aynı `id`'yi taşımaz.
 - **Elle (Umut; bu oturumların ekran kaydı izni yok):** başarı ölçütleri 1–7. Steam'in başarılı kurulumu ev ağında, başarısız kurulum (ölçüt 5) ofis ağında.
 
 ## 8. Bu tasarıma girmeyenler
