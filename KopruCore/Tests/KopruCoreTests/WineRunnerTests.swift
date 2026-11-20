@@ -69,6 +69,22 @@ struct WineRunnerTests {
         #expect(commands == ["wine C:\\Steam\\steam.exe -shutdown", "wineserver -k"])
     }
 
+    @Test func waitForWineserverRunsWaitFlag() async throws {
+        let td = try TempDir()
+        let (runner, bottle) = try setUp(td)
+        await runner.waitForWineserver(prefix: bottle.url, settings: bottle.info.settings)
+        #expect(td.recordedLines().filter { !$0.hasPrefix("WINEPREFIX=") } == ["wineserver -w"])
+    }
+
+    @Test func waitForWineserverGivesUpAfterTimeout() async throws {
+        let td = try TempDir()
+        let (runner, bottle) = try setUp(td, ["UYKU": "5"])
+        let clock = ContinuousClock()
+        let started = clock.now
+        await runner.waitForWineserver(prefix: bottle.url, settings: bottle.info.settings, timeout: .milliseconds(500))
+        #expect(clock.now - started < .seconds(3))
+    }
+
     @Test func stopWithoutShutdownOnlyKills() async throws {
         let td = try TempDir()
         let (runner, bottle) = try setUp(td)

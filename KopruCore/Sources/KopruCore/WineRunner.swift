@@ -68,16 +68,35 @@ public final class WineRunner: @unchecked Sendable {
 
     /// `wineserver -k`: bottle'daki bütün Windows süreçlerini kapatır.
     public func killWineserver(prefix: URL, settings: BottleSettings) async {
+        await runWineserver(["-k"], prefix: prefix, settings: settings, timeout: nil)
+    }
+
+    /// `wineserver -w`: bottle'daki süreçler bitip wineserver kapanana kadar bekler.
+    /// Wine kayıt defterini (system.reg, user.reg) diske ancak o zaman yazar.
+    /// Takılan bir süreç Köprü'yü kilitlemesin diye `timeout` sonunda beklemeyi bırakır.
+    public func waitForWineserver(prefix: URL, settings: BottleSettings, timeout: Duration = .seconds(30)) async {
+        await runWineserver(["-w"], prefix: prefix, settings: settings, timeout: timeout)
+    }
+
+    private func runWineserver(_ arguments: [String], prefix: URL, settings: BottleSettings, timeout: Duration?) async {
         let process = Process()
         process.executableURL = engine.wineserver
-        process.arguments = ["-k"]
+        process.arguments = arguments
         process.environment = engine.environment(prefix: prefix, settings: settings, base: baseEnvironment)
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
+        let box = ProcessBox(process)
+        let timer = timeout.map { limit in
+            Task {
+                try? await Task.sleep(for: limit)
+                box.terminateIfRunning()
+            }
+        }
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             process.terminationHandler = { _ in continuation.resume() }
             do { try process.run() } catch { continuation.resume() }
         }
+        timer?.cancel()
     }
 
     /// Önce programı kibarca kapatmayı dener (`shutdown`), `grace` kadar bekler, sonra wineserver'ı öldürür.
@@ -106,5 +125,16 @@ public final class WineRunner: @unchecked Sendable {
 
     private func adjust(_ key: String, by delta: Int) {
         lock.withLock { counts[key, default: 0] += delta }
+    }
+}
+
+/// Zaman aşımı görevinin süreci sonlandırabilmesi için.
+private final class ProcessBox: @unchecked Sendable {
+    private let process: Process
+
+    init(_ process: Process) { self.process = process }
+
+    func terminateIfRunning() {
+        if process.isRunning { process.terminate() }
     }
 }

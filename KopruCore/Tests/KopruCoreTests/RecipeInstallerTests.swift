@@ -35,10 +35,12 @@ struct RecipeInstallerTests {
                           .started(.configuring), .finished(.configuring)])
 
         let commands = td.recordedLines().filter { !$0.hasPrefix("WINEPREFIX=") }
-        #expect(commands.count == 3)
+        #expect(commands.count == 4)
         #expect(commands[0] == "wine wineboot --init")
-        #expect(commands[1] == "wine \(td.paths.downloads.appendingPathComponent("SteamSetup.exe").path) /S")
-        #expect(commands[2].hasPrefix("wine reg add HKCU\\Software\\Wine\\DllOverrides /v gameoverlayrenderer64"))
+        // Kayıt defteri ancak wineserver kapanınca diske yazılır; bottle tamamlanmış sayılmadan beklenir.
+        #expect(commands[1] == "wineserver -w")
+        #expect(commands[2] == "wine \(td.paths.downloads.appendingPathComponent("SteamSetup.exe").path) /S")
+        #expect(commands[3].hasPrefix("wine reg add HKCU\\Software\\Wine\\DllOverrides /v gameoverlayrenderer64"))
     }
 
     @Test func winebootFailureKeepsHalfBottle() async throws {

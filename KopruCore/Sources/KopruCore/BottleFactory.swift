@@ -59,6 +59,8 @@ public struct BottleFactory: Sendable {
         guard result.exitCode == 0 else {
             throw InstallFailure(step: .preparing, bottle: bottle, underlying: InstallError.prefixInitFailed(exitCode: result.exitCode))
         }
+        // wineboot bitince kayıt defteri henüz diskte değil; wineserver kapanıp yazana kadar bekle (~7 sn).
+        await runner.waitForWineserver(prefix: bottle.url, settings: bottle.info.settings)
         return bottle
     }
 }
