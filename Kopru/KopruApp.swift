@@ -1,12 +1,14 @@
 import SwiftUI
-import KopruCore
 
 @main
 struct KopruApp: App {
+    @State private var model = AppModel()
+
     var body: some Scene {
         WindowGroup("Köprü") {
-            Text("Köprü — bottle klasörü: \(KopruPaths.standard.bottles.path)")
-                .padding()
+            ContentView()
+                .environment(model)
+                .frame(minWidth: 780, minHeight: 480)
         }
     }
 }
