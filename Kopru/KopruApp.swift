@@ -10,7 +10,17 @@ struct KopruApp: App {
                 .environment(model)
                 .frame(minWidth: 1040, minHeight: 560)
         }
+        // İlk açılış boyutu: kartlar 3 sütun, sağ panel rahat sığar (taslaktaki pencere).
+        .defaultSize(width: 1280, height: 800)
         .commands {
+            // Dosya menüsü: tek pencereli uygulama; "Yeni Pencere" yerine bottle komutları.
+            CommandGroup(replacing: .newItem) {
+                Button("Boş Bottle…") { model.isAskingNewBottle = true }
+                    .keyboardShortcut("n")
+                    .disabled(!model.isReady || model.isInstallRunning)
+                Button("Bottle İçe Aktar…") { model.isPickingImportFolder = true }
+                    .disabled(!model.isReady)
+            }
             // Düzen menüsündeki metin "Bul" grubu yerine: ⌘F Kur sayfasında arar.
             CommandGroup(replacing: .textEditing) {
                 Button("Programlarda Ara") { model.focusSearch() }

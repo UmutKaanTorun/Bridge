@@ -95,11 +95,10 @@ struct UnlistedDetail: View {
                         Text("Bu adla bir bottle var.").font(.caption).foregroundStyle(.red)
                     }
                 }
-                HStack {
+                HStack(spacing: 8) {
                     Button("Vazgeç") { model.unlistedFile = nil }
-                    Spacer()
-                    Button("Kur") { install() }
-                        .defaultActionUnlessSearching()
+                        .controlSize(.large)
+                    PrimaryPanelButton(title: "Kur", wide: true) { install() }
                         .disabled(targetBottleID == nil && !model.isNameAvailable(bottleName))
                 }
                 .padding(.top, 7)

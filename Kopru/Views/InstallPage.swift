@@ -90,29 +90,41 @@ struct InstallPage: View {
         searchFocused = false
     }
 
-    private var chips: some View {
-        HStack(spacing: 6) {
-            CategoryChip(title: "Tümü", count: model.catalog.count(in: nil), isOn: category == nil) {
-                category = nil
-            }
-            ForEach(model.catalog.categories, id: \.self) { item in
-                CategoryChip(title: item.label, count: model.catalog.count(in: item), isOn: category == item) {
-                    category = item
-                }
+    @ViewBuilder
+    private var chipItems: some View {
+        CategoryChip(title: "Tümü", count: model.catalog.count(in: nil), isOn: category == nil) {
+            category = nil
+        }
+        ForEach(model.catalog.categories, id: \.self) { item in
+            CategoryChip(title: item.label, count: model.catalog.count(in: item), isOn: category == item) {
+                category = item
             }
         }
     }
 
+    private var unlistedLink: some View {
+        HStack(spacing: 4) {
+            Text("Listede yok mu?").foregroundStyle(.secondary)
+            Button("Dosya seç…") { model.isPickingInstaller = true }
+                .buttonStyle(.link)
+        }
+        .fixedSize()
+        .help("Kurulum dosyasını (.exe, .msi) pencereye de sürükleyebilirsin")
+    }
+
+    /// Kapsüller ve bağlantı tek satıra sığarsa yan yana; sığmazsa kapsüller alt satırlara sarılır, bağlantı altta.
+    /// Hiçbir kategori kesilmez.
     private var filterRow: some View {
-        HStack(spacing: 12) {
-            ScrollView(.horizontal, showsIndicators: false) { chips }
-            HStack(spacing: 4) {
-                Text("Listede yok mu?").foregroundStyle(.secondary)
-                Button("Dosya seç…") { model.isPickingInstaller = true }
-                    .buttonStyle(.link)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                HStack(spacing: 6) { chipItems }
+                Spacer(minLength: 0)
+                unlistedLink
             }
-            .fixedSize()
-            .help("Kurulum dosyasını (.exe, .msi) pencereye de sürükleyebilirsin")
+            VStack(alignment: .leading, spacing: 10) {
+                FlowLayout(spacing: 6, lineSpacing: 6) { chipItems }
+                unlistedLink
+            }
         }
     }
 

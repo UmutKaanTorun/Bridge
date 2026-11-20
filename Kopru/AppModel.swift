@@ -77,6 +77,10 @@ final class AppModel {
     var unlistedDefaultBottleID: Bottle.ID?
     /// Kur sayfasının kurulum dosyası seçicisi açık mı ("Dosya seç…", "Yine de dene…").
     var isPickingInstaller = false
+    /// Kenar çubuğundaki "Boş bottle" ad sorusu açık mı (düğme ya da Dosya → Boş Bottle…).
+    var isAskingNewBottle = false
+    /// Bottle içe aktarma klasör seçicisi açık mı (Dosya → Bottle İçe Aktar…).
+    var isPickingImportFolder = false
 
     /// ⌘F: Kur sayfası açılınca arama alanı odak alsın.
     var wantsSearchFocus = false

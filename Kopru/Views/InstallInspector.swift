@@ -21,6 +21,22 @@ extension View {
     }
 }
 
+/// Paneldeki ana düğme (Kur / Aç): taslaktaki gibi mavi; `wide` ise satırda kalan genişliği doldurur.
+struct PrimaryPanelButton: View {
+    let title: LocalizedStringKey
+    var wide = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title).frame(maxWidth: wide ? .infinity : nil)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .defaultActionUnlessSearching()
+    }
+}
+
 /// Panel içindeki küçük bölüm başlığı.
 struct PanelSectionTitle: View {
     let title: LocalizedStringKey
@@ -178,11 +194,10 @@ private struct EntryActions: View {
                 Text("“\(bottle.info.name)” bottle'ında kurulu")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                HStack {
+                HStack(spacing: 8) {
                     Button("Bottle'a git") { model.selection = .bottle(bottle.id) }
-                    Spacer()
-                    Button("Aç") { model.launchRecipe(in: bottle) }
-                        .defaultActionUnlessSearching()
+                        .controlSize(.large)
+                    PrimaryPanelButton(title: "Aç", wide: true) { model.launchRecipe(in: bottle) }
                 }
             }
         } else if recipe.rating == .broken {
@@ -204,8 +219,7 @@ private struct EntryActions: View {
             HStack {
                 Text("İnternet gerekli").font(.caption).foregroundStyle(.tertiary)
                 Spacer()
-                Button("Kur") { model.installRecipe(recipe, bottleName: bottleName) }
-                    .defaultActionUnlessSearching()
+                PrimaryPanelButton(title: "Kur") { model.installRecipe(recipe, bottleName: bottleName) }
                     .disabled(!model.isNameAvailable(bottleName))
             }
             .padding(.top, 7)
@@ -245,15 +259,16 @@ struct InstallProgressPanel: View {
                 failedActions
             } else if progress.finished,
                       let bottle = progress.bottle.flatMap({ snapshot in model.bottles.first { $0.id == snapshot.id } }) {
-                HStack {
+                HStack(spacing: 8) {
                     Button("Bottle'a git") {
                         model.closeInstallPanel()
                         model.selection = .bottle(bottle.id)
                     }
-                    Spacer()
+                    .controlSize(.large)
                     if case .recipe = progress.source {
-                        Button("Aç") { model.launchRecipe(in: bottle) }
-                            .defaultActionUnlessSearching()
+                        PrimaryPanelButton(title: "Aç", wide: true) { model.launchRecipe(in: bottle) }
+                    } else {
+                        Spacer()
                     }
                 }
             } else {

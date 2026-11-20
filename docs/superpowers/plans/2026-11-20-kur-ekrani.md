@@ -2755,3 +2755,9 @@ superpowers:finishing-a-development-branch ile `gelistirme/kur-ekrani` dalının
 - Commit imza satırları, kodu yazan modele göre (Haiku/Sonnet/Opus) değişiyor.
 
 **Ertelenen küçük bulgular** (birleştirmeyi engellemez): kartlarda erişilebilirlik özellikleri yok; "Tümü" String Catalog'a çıkmıyor; bottle adı uygunluğu her çizimde diskten iki kez okunuyor; simgesi olmayan tarif için olumsuz sonuç önbelleğe alınmıyor; okunamayan dosya boyutu "Sıfır KB" görünüyor; biten listede olmayan kurulumun "Kuruldu" satırı panel kapatılana dek kalıyor ve bu durumda "Kapat" düğmesi yok; rozet yazılarının açık temadaki kontrastı ölçülmedi (gözle sorun görülmedi); İ/I büyük harfli Türkçe arama için test yok.
+
+**Taslağa uyum (2026-11-21, kabulden sonra):** Umut uygulamayı taslakla karşılaştırınca düzeltildi (ekran görüntüleriyle doğrulandı):
+- Kategori kapsülleri kesiliyordu ("İş ve muhaseb…", Mühendislik ve Ofis görünmüyordu): satır `ViewThatFits` ile; sığarsa kapsüller ve "Listede yok mu?" yan yana, sığmazsa kapsüller `FlowLayout` ile alt satıra sarılır, bağlantı altta.
+- Pencere ilk açılışta 1280 × 800 (`defaultSize`); kayıtlı eski pencere boyutu varsa o kullanılır.
+- Kenar çubuğu: üstte kemer simgesi ve "Köprü" adı; "Program kur" simgesi vurgu renginde (seçiliyken beyaz); altta "+ Boş bottle" (basılı tutunca "Bottle İçe Aktar…"); Dosya menüsüne "Boş Bottle…" (⌘N) ve "Bottle İçe Aktar…" eklendi, "Yeni Pencere" kalktı.
+- Sağ paneldeki ana düğmeler (Kur, Aç; listede olmayan programın Kur'u) mavi (`borderedProminent`) ve büyük; Aç ve listede olmayan Kur satırda kalan genişliği doldurur.

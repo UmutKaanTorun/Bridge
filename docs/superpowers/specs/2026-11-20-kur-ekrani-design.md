@@ -41,7 +41,7 @@ Kullanıcı bir Windows programını Köprü'ye kurmaya karar verirken üç soru
 | Konu | Karar |
 |---|---|
 | Yer | Ana pencerenin detay sütununda bir sayfa. Kenar çubuğu seçimi `enum SidebarItem { case install, bottle(Bottle.ID) }`. `InstallSheet` kalkar; `InstallProgressView` yalnızca kenar çubuğundaki "Boş Bottle…" için (o akış bu sayfanın dışında) sheet olarak kalır. |
-| Pencere | En küçük boyut 1040 × 560 pt (kenar çubuğu + iki sütunlu ızgara + 340 pt panel sığsın; v0.1'de 780 × 480). |
+| Pencere | İlk açılış 1280 × 800 pt (taslaktaki boyut; kartlar 3 sütun). En küçük boyut 1040 × 560 pt (kenar çubuğu + iki sütunlu ızgara + 340 pt panel sığsın; v0.1'de 780 × 480). |
 | Sağ panel | SwiftUI `.inspector` (macOS 14+), yalnızca bu sayfada ve her zaman açık; genişlik 300–420 pt, varsayılan 340. Bottle sayfalarında yok. |
 | Başlık ve arama | İçerikte büyük başlık "Program kur" ve aynı satırın sağında 280 pt arama alanı (`TextField` + `@FocusState`). Pencere başlığı `navigationTitle("Program kur")` ile Mission Control'de görünür, araç çubuğunda gizlenir (`.toolbar(removing: .title)`). `.searchable` kullanılmaz: macOS 14'te ⌘F ile odaklama (`searchFocused`) yok. |
 | ⌘F | Düzen menüsüne "Programlarda Ara" komutu (⌘F); seçim Program kur'a geçer ve arama odaklanır. |
@@ -131,7 +131,8 @@ Etiket ve `verdict`, Köprü'deki testten sonra yazılır; test geçmeden tarif 
 
 ### 4.1 Kenar çubuğu
 
-- En üstte **Program kur** satırı (`plus.circle`), altında "Bottle'lar" bölümü (v0.1'deki gibi; çalışan bottle'da yeşil nokta).
+- En üstte kemer simgesi ve "Köprü" adı; altında **Program kur** satırı (`plus.circle`, vurgu renginde), sonra "Bottle'lar" bölümü (v0.1'deki gibi; çalışan bottle'da yeşil nokta).
+- En altta "+ Boş bottle" (tıklayınca boş bottle; basılı tutunca "Bottle İçe Aktar…"). İkisi Dosya menüsünde de var: "Boş Bottle…" (⌘N) ve "Bottle İçe Aktar…" (Dosya menüsündeki "Yeni Pencere" kalktı).
 - Bottle satırı, bottle bir tarife bağlıysa ve tarifin simgesi varsa o simgeyi, yoksa `shippingbox` gösterir.
 - Açılışta seçim: hiç bottle yoksa Program kur, varsa ilk bottle (v0.1 davranışı).
 
