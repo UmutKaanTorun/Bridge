@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "steam",
+  "name": "Steam",
+  "summary": "Valve'ın oyun mağazası ve başlatıcısı",
+  "category": "game",
+  "rating": "works",
+  "bottle": {
+    "defaultName": "Steam",
+    "settings": { "msync": true, "virtualDesktop": { "mode": "auto" }, "fpsHud": false }
+  },
+  "installer": {
+    "url": "https://cdn.cloudflare.steamstatic.com/client/installer/SteamSetup.exe",
+    "sha256": null,
+    "fileName": "SteamSetup.exe",
+    "arguments": ["/S"]
+  },
+  "afterInstall": [
+    { "action": "registry", "key": "HKCU\\Software\\Wine\\DllOverrides", "name": "gameoverlayrenderer64", "value": "" }
+  ],
+  "beforeLaunch": [
+    { "action": "steamWebHelperProxy" }
+  ],
+  "launch": {
+    "name": "Steam",
+    "windowsPath": "C:\\Program Files (x86)\\Steam\\steam.exe",
+    "arguments": ["-noverifyfiles", "-no-cef-sandbox"],
+    "shutdownArguments": ["-shutdown"]
+  },
+  "detect": ["drive_c/Program Files (x86)/Steam/steam.exe"],
+  "hideShortcuts": ["Steam/Steam.lnk"]
+}
