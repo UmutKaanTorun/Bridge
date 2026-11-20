@@ -23,9 +23,24 @@ enum UnlistedTarget: Hashable {
     case existing(Bottle)
 }
 
+/// Kenar çubuğunda seçili satır.
+enum SidebarItem: Hashable {
+    case install
+    case bottle(Bottle.ID)
+}
+
+/// Kurulumun nereden başladığı; kart ve panel kendi kurulumunu bununla tanır.
+enum InstallSource: Hashable {
+    /// Tarif id'si
+    case recipe(String)
+    case unlisted(URL)
+    case emptyBottle
+}
+
 /// Kurulum ilerleme ekranının durumu.
 struct InstallProgress: Identifiable {
     let id = UUID()
+    let source: InstallSource
     let title: String
     let steps: [InstallStep]
     /// Yeni bottle açılıyorsa hata ekranı "yarım bottle'ı sil" sunar.
@@ -53,7 +68,19 @@ final class AppModel {
     private(set) var startupProblem: StartupProblem?
 
     private(set) var bottles: [Bottle] = []
-    var selectedBottleID: Bottle.ID?
+    var selection: SidebarItem?
+    /// Kur sayfasında seçili kart.
+    var selectedEntryID: CatalogEntry.ID?
+    /// Kur sayfası panelinde gösterilen listede olmayan kurulum dosyası; doluyken kart seçimi yerine o görünür.
+    var unlistedFile: URL?
+    /// Listede olmayan dosya için önerilen bottle (dosya bırakılmadan önce bakılan bottle).
+    var unlistedDefaultBottleID: Bottle.ID?
+
+    /// Seçili bottle; Kur sayfasındayken nil. Eski görünümler için yazılabilir.
+    var selectedBottleID: Bottle.ID? {
+        get { if case let .bottle(id) = selection { id } else { nil } }
+        set { selection = newValue.map(SidebarItem.bottle) }
+    }
     private(set) var shortcuts: [ShortcutProgram] = []
     private(set) var runningCounts: [Bottle.ID: Int] = [:]
     /// `whileRunning` koruması çalışan bottle'lar (bottle başına tek görev).
@@ -107,6 +134,18 @@ final class AppModel {
 
     var isReady: Bool { runner != nil }
 
+    var isBottlePage: Bool { if case .bottle = selection { true } else { false } }
+
+    var isInstallRunning: Bool { install?.isActive == true }
+
+    var selectedEntry: CatalogEntry? { catalog.entry(id: selectedEntryID) }
+
+    /// Kartın tarifinin kurulu olduğu ilk bottle.
+    func installedBottle(for entry: CatalogEntry) -> Bottle? {
+        guard case let .recipe(recipe) = entry else { return nil }
+        return bottles.withRecipe(recipe.id).first
+    }
+
     var selectedBottle: Bottle? { bottles.first { $0.id == selectedBottleID } }
 
     func recipe(for bottle: Bottle) -> Recipe? { catalog.recipe(id: bottle.info.recipeId) }
@@ -129,8 +168,11 @@ final class AppModel {
         } catch {
             show("Bottle'lar okunamadı", error)
         }
-        if let id { selectedBottleID = id }
-        if selectedBottle == nil { selectedBottleID = bottles.first?.id }
+        if let id { selection = .bottle(id) }
+        // Seçim yoksa ya da seçili bottle silindiyse: ilk bottle, o da yoksa Kur sayfası.
+        if selection == nil || (isBottlePage && selectedBottle == nil) {
+            selection = bottles.first.map { .bottle($0.id) } ?? .install
+        }
         rescan()
     }
 
@@ -161,6 +203,13 @@ final class AppModel {
     func launch(_ item: ProgramItem) {
         guard let runner, let bottle = selectedBottle else { return }
         start(item.target, name: item.name, in: bottle, runner: runner)
+    }
+
+    /// Tarifin başlatıcısını verilen bottle'da açar (Kur sayfasındaki "Aç"); sayfa değişmez.
+    func launchRecipe(in bottle: Bottle) {
+        guard let runner, let launch = recipe(for: bottle)?.launch else { return }
+        let target = LaunchTarget.windowsPath(launch.windowsPath, arguments: launch.arguments(forBottleAt: bottle.url))
+        start(target, name: launch.name, in: bottle, runner: runner)
     }
 
     func runExecutable(_ file: URL, pin: Bool) {
@@ -260,9 +309,44 @@ final class AppModel {
 
     // MARK: Kurulum
 
+    /// Kur sayfasına geçer; `file` verilirse panel o kurulum dosyasını gösterir.
+    func showInstallPage(unlisted file: URL? = nil) {
+        if let file {
+            unlistedDefaultBottleID = selectedBottleID
+            unlistedFile = file
+        }
+        selection = .install
+    }
+
+    func selectEntry(_ id: CatalogEntry.ID) {
+        selectedEntryID = id
+        unlistedFile = nil
+    }
+
+    /// Süren kurulumun paneline döner.
+    func showRunningInstall() {
+        switch install?.source {
+        case let .recipe(id):
+            selectedEntryID = catalog.recipe(id: id).map { CatalogEntry.recipe($0).id }
+            unlistedFile = nil
+            selection = .install
+        case let .unlisted(file):
+            showInstallPage(unlisted: file)
+        case .emptyBottle, nil:
+            break
+        }
+    }
+
+    /// Paneldeki biten ya da başarısız kurulumu kapatır; listede olmayan dosyanın panelini de temizler.
+    func closeInstallPanel() {
+        if case .unlisted = install?.source { unlistedFile = nil }
+        install = nil
+    }
+
     func installRecipe(_ recipe: Recipe, bottleName: String) {
         guard let runner else { return }
-        install = InstallProgress(title: "\(recipe.name) kuruluyor", steps: InstallStep.allCases, createsBottle: true)
+        install = InstallProgress(source: .recipe(recipe.id), title: "\(recipe.name) kuruluyor",
+                                  steps: InstallStep.allCases, createsBottle: true)
         let installer = RecipeInstaller(factory: BottleFactory(store: store, runner: runner),
                                         runner: runner,
                                         actions: RecipeActionPerformer(runner: runner, catalog: catalog),
@@ -283,7 +367,8 @@ final class AppModel {
     func installUnlisted(file: URL, target: UnlistedTarget) {
         guard let runner else { return }
         let createsBottle: Bool = if case .newBottle = target { true } else { false }
-        install = InstallProgress(title: "\(file.lastPathComponent) kuruluyor",
+        install = InstallProgress(source: .unlisted(file),
+                                  title: "\(file.lastPathComponent) kuruluyor",
                                   steps: createsBottle ? [.preparing, .installing] : [.installing],
                                   createsBottle: createsBottle)
         let factory = BottleFactory(store: store, runner: runner)
@@ -319,7 +404,7 @@ final class AppModel {
 
     func createEmptyBottle(name: String) {
         guard let runner else { return }
-        install = InstallProgress(title: "\(name) oluşturuluyor", steps: [.preparing], createsBottle: true)
+        install = InstallProgress(source: .emptyBottle, title: "\(name) oluşturuluyor", steps: [.preparing], createsBottle: true)
         Task {
             do {
                 apply(.started(.preparing))
@@ -346,7 +431,7 @@ final class AppModel {
             progress.bottle = bottle
         }
         install = progress
-        if case let .bottleCreated(bottle) = event { reload(select: bottle.id) }
+        if case .bottleCreated = event { reload() }
     }
 
     private func finishInstall(_ bottle: Bottle) {
@@ -357,7 +442,8 @@ final class AppModel {
             progress.bottle = bottle
             install = progress
         }
-        reload(select: bottle.id)
+        // Kur sayfasından başlayan kurulumda sayfa değişmez; kenar çubuğundan açılan boş bottle seçilir.
+        if install?.source == .emptyBottle { reload(select: bottle.id) } else { reload() }
     }
 
     private func failInstall(_ error: any Error) {
@@ -375,7 +461,7 @@ final class AppModel {
         if let progress = install, progress.createsBottle, let bottle = progress.bottle {
             deleteBottle(bottle)
         }
-        install = nil
+        closeInstallPanel()
     }
 
     // MARK: Bottle yönetimi
