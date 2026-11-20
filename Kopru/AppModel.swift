@@ -55,6 +55,9 @@ final class AppModel {
     private(set) var runningCounts: [Bottle.ID: Int] = [:]
     /// `whileRunning` koruması çalışan bottle'lar (bottle başına tek görev).
     @ObservationIgnored private var guardedBottles: Set<Bottle.ID> = []
+    /// Programların exe'den çıkarılan simgeleri. Bulunamayanlar saklanmaz: program sonradan
+    /// kurulunca (ör. Steam ilk açılışta) simgesi bir sonraki gösterimde gelir.
+    @ObservationIgnored private var iconCache: [String: NSImage] = [:]
     var alert: AppAlert?
     var install: InstallProgress?
 
@@ -127,6 +130,19 @@ final class AppModel {
         }
         let hidden = Set(bottle.info.hiddenShortcuts).union(recipe(for: bottle)?.hideShortcuts ?? [])
         shortcuts = ProgramScanner.scan(bottleURL: bottle.url, hidden: hidden)
+    }
+
+    /// Kutucuğun gerçek program simgesi; dosya okuması ana iş parçacığının dışında yapılır.
+    func icon(for item: ProgramItem, in bottle: Bottle) async -> NSImage? {
+        let key = "\(bottle.folderName)|\(item.id)"
+        if let cached = iconCache[key] { return cached }
+        let bottleURL = bottle.url
+        let data = await Task.detached(priority: .utility) {
+            ProgramIcon.icoData(for: item, bottleURL: bottleURL)
+        }.value
+        guard let data, let image = NSImage(data: data) else { return nil }
+        iconCache[key] = image
+        return image
     }
 
     // MARK: Programları açma

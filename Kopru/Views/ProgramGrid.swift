@@ -19,7 +19,7 @@ struct ProgramGrid: View {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(items) { item in
-                            ProgramTile(item: item)
+                            ProgramTile(item: item, bottle: bottle)
                         }
                     }
                     .padding(20)
@@ -34,13 +34,28 @@ struct ProgramGrid: View {
 private struct ProgramTile: View {
     @Environment(AppModel.self) private var model
     let item: ProgramItem
+    let bottle: Bottle
+    @State private var icon: NSImage?
 
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: symbol)
-                .font(.system(size: 36, weight: .light))
-                .frame(width: 64, height: 64)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
+            Group {
+                if let icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 56, height: 56)
+                } else {
+                    // Simgesi okunamayan programlar için genel simge.
+                    Image(systemName: symbol)
+                        .font(.system(size: 36, weight: .light))
+                        .frame(width: 64, height: 64)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
+                }
+            }
+            .frame(width: 64, height: 64)
+            .task(id: item.id) { icon = await model.icon(for: item, in: bottle) }
             Text(item.name)
                 .font(.callout)
                 .multilineTextAlignment(.center)
