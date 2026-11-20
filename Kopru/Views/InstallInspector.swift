@@ -43,6 +43,17 @@ struct InstallInspector: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        VStack(spacing: 0) {
+            if let progress = model.install, case let .unlisted(file) = progress.source, model.unlistedFile != file {
+                HiddenUnlistedInstallRow(file: file, progress: progress)
+                Divider()
+            }
+            content
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if let file = model.unlistedFile {
             UnlistedDetail(file: file, defaultBottleID: model.unlistedDefaultBottleID).id(file)
         } else if let entry = model.selectedEntry {
@@ -284,5 +295,35 @@ private struct TryAnywayActions: View {
                 .fixedSize(horizontal: false, vertical: true)
             Button(broken ? "Yine de dene…" : "Dosya seç…") { model.isPickingInstaller = true }
         }
+    }
+}
+
+/// Listede olmayan kurulum panelin dışında kaldıysa (kullanıcı bir kart seçti) ona dönüş satırı.
+private struct HiddenUnlistedInstallRow: View {
+    @Environment(AppModel.self) private var model
+    let file: URL
+    let progress: InstallProgress
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if progress.isActive {
+                ProgressView().controlSize(.small)
+            } else if progress.failedStep != nil {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
+            } else {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(file.lastPathComponent).lineLimit(1).truncationMode(.middle)
+                Text(progress.isActive ? "Kuruluyor" : progress.failedStep != nil ? "Kurulamadı" : "Kuruldu")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Göster") { model.showInstallPage(unlisted: file) }
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 10)
+        .background(.quaternary.opacity(0.4))
     }
 }

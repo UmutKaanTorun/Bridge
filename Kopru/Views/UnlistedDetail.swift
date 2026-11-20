@@ -51,7 +51,7 @@ struct UnlistedDetail: View {
                 .padding(EdgeInsets(top: 14, leading: 22, bottom: 18, trailing: 22))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onAppear {
+        .onChange(of: model.bottles.map(\.id), initial: true) {
             // Önerilen bottle o arada silinmiş olabilir; o zaman yeni bottle önerilir.
             if let id = targetBottleID, !model.bottles.contains(where: { $0.id == id }) {
                 targetBottleID = nil
