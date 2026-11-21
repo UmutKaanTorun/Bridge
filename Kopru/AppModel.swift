@@ -69,9 +69,7 @@ final class AppModel {
 
     private(set) var bottles: [Bottle] = []
     var selection: SidebarItem?
-    /// Kur sayfasında seçili kart.
-    var selectedEntryID: CatalogEntry.ID?
-    /// Kur sayfası panelinde gösterilen listede olmayan kurulum dosyası; doluyken kart seçimi yerine o görünür.
+    /// Listede olmayan kurulum dosyası; doluyken kurulum penceresi (sheet) açıktır.
     var unlistedFile: URL?
     /// Listede olmayan dosya için önerilen bottle (dosya bırakılmadan önce bakılan bottle).
     var unlistedDefaultBottleID: Bottle.ID?
@@ -106,6 +104,8 @@ final class AppModel {
     @ObservationIgnored private var recipeIconCache: [String: NSImage] = [:]
     var alert: AppAlert?
     var install: InstallProgress?
+    /// Süren platform kurulumu; "Durdur" bu görevi iptal eder.
+    @ObservationIgnored private var installTask: Task<Void, Never>?
 
     init() {
         let paths = KopruPaths.standard
@@ -136,6 +136,25 @@ final class AppModel {
             startupProblem = .engineMissing(error.localizedDescription)
         }
         reload()
+        #if DEBUG
+        // Ekran görüntüsüyle denetim için: KOPRU_SAYFA=kur Debug derlemesini Program kur sayfasında açar.
+        if ProcessInfo.processInfo.environment["KOPRU_SAYFA"] == "kur" { selection = .install }
+        // KOPRU_SAHTE_KURULUM=indiriliyor:epic | hata:epic → satırın kurulum durumlarını gösterir (gerçek kurulum yok).
+        if let fake = ProcessInfo.processInfo.environment["KOPRU_SAHTE_KURULUM"]?.split(separator: ":"), fake.count == 2,
+           let recipe = catalog.recipe(id: String(fake[1])) {
+            var progress = InstallProgress(source: .recipe(recipe.id), title: "\(recipe.name) kuruluyor",
+                                           steps: InstallStep.allCases, createsBottle: true)
+            progress.done = [.preparing]
+            if fake[0] == "hata" {
+                progress.failedStep = .installing
+                progress.errorMessage = InstallError.installerFailed(exitCode: 7).localizedDescription
+            } else {
+                progress.current = .downloading
+                progress.fraction = 0.42
+            }
+            install = progress
+        }
+        #endif
     }
 
     private static var developmentFallback: URL? {
@@ -154,12 +173,9 @@ final class AppModel {
 
     var isInstallRunning: Bool { install?.isActive == true }
 
-    var selectedEntry: CatalogEntry? { catalog.entry(id: selectedEntryID) }
-
-    /// Kartın tarifinin kurulu olduğu ilk bottle (detect dosyaları var).
-    func installedBottle(for entry: CatalogEntry) -> Bottle? {
-        guard case let .recipe(recipe) = entry else { return nil }
-        return bottles.withRecipe(recipe.id).first { recipe.isInstalled(in: $0.url) }
+    /// Tarifin kurulu olduğu ilk bottle (detect dosyaları var).
+    func installedBottle(for recipe: Recipe) -> Bottle? {
+        bottles.withRecipe(recipe.id).first { recipe.isInstalled(in: $0.url) }
     }
 
     var selectedBottle: Bottle? { bottles.first { $0.id == selectedBottleID } }
@@ -214,9 +230,8 @@ final class AppModel {
         return image
     }
 
-    /// Kartın tarif simgesi; "Yakında" girdilerinde ve simgesi olmayan tarifte nil.
-    func recipeIcon(for entry: CatalogEntry) -> NSImage? {
-        guard case let .recipe(recipe) = entry else { return nil }
+    /// Tarifin simgesi (RecipeFiles/<id>/icon.png); yoksa nil.
+    func recipeIcon(for recipe: Recipe) -> NSImage? {
         if let cached = recipeIconCache[recipe.id] { return cached }
         guard let url = catalog.iconURL(for: recipe.id), let image = NSImage(contentsOf: url) else { return nil }
         recipeIconCache[recipe.id] = image
@@ -225,7 +240,7 @@ final class AppModel {
 
     /// Kenar çubuğunda tarife bağlı bottle'ın simgesi.
     func recipeIcon(forBottle bottle: Bottle) -> NSImage? {
-        recipe(for: bottle).flatMap { recipeIcon(for: .recipe($0)) }
+        recipe(for: bottle).flatMap { recipeIcon(for: $0) }
     }
 
     // MARK: Programları açma
@@ -348,17 +363,10 @@ final class AppModel {
         selection = .install
     }
 
-    func selectEntry(_ id: CatalogEntry.ID) {
-        selectedEntryID = id
-        unlistedFile = nil
-    }
-
-    /// Süren kurulumun paneline döner.
+    /// Süren kuruluma döner: platform kurulumu Kur sayfasındaki satırında, listede olmayan dosya kendi penceresinde.
     func showRunningInstall() {
         switch install?.source {
-        case let .recipe(id):
-            selectedEntryID = catalog.recipe(id: id).map { CatalogEntry.recipe($0).id }
-            unlistedFile = nil
+        case .recipe:
             selection = .install
         case let .unlisted(file):
             showInstallPage(unlisted: file)
@@ -367,15 +375,23 @@ final class AppModel {
         }
     }
 
-    /// Paneldeki biten ya da başarısız kurulumu kapatır; listede olmayan dosyanın panelini de temizler.
+    /// Biten ya da başarısız kurulumu kapatır; listede olmayan dosyanın penceresini de kapatır.
     func closeInstallPanel() {
         if case .unlisted = install?.source { unlistedFile = nil }
         install = nil
     }
 
-    func installRecipe(_ recipe: Recipe, bottleName: String) {
+    /// Tek tık kurulum: bottle adı sorulmaz; tarifin adı doluysa "Steam 2" gibi numaralanır.
+    func installRecipe(_ recipe: Recipe) {
         guard let runner else { return }
         guard !isInstallRunning else { return }
+        let bottleName: String
+        do {
+            bottleName = try store.availableName(recipe.bottle.defaultName)
+        } catch {
+            show("\(recipe.name) kurulamadı", error)
+            return
+        }
         install = InstallProgress(source: .recipe(recipe.id), title: "\(recipe.name) kuruluyor",
                                   steps: InstallStep.allCases, createsBottle: true)
         let installer = RecipeInstaller(factory: BottleFactory(store: store, runner: runner),
@@ -383,16 +399,27 @@ final class AppModel {
                                         actions: RecipeActionPerformer(runner: runner, catalog: catalog),
                                         downloader: Downloader(),
                                         downloadsDirectory: paths.downloads)
-        Task {
+        installTask = Task {
             do {
                 let bottle = try await installer.install(recipe, bottleName: bottleName) { event in
                     Task { @MainActor in self.apply(event) }
                 }
                 finishInstall(bottle)
+            } catch let failure as InstallFailure where failure.underlying is CancellationError {
+                // Kullanıcı durdurdu: yarım bottle silinir, satır yeniden "Kur" olur.
+                install = nil
+                if let half = failure.bottle { await removeBottle(half) } else { reload() }
             } catch {
                 failInstall(error)
             }
+            installTask = nil
         }
+    }
+
+    /// Süren platform kurulumunu durdurur (indirme ya da takılan kurulum programı).
+    func cancelInstall() {
+        guard isInstallRunning, case .recipe = install?.source else { return }
+        installTask?.cancel()
     }
 
     func installUnlisted(file: URL, target: UnlistedTarget) {
@@ -467,7 +494,24 @@ final class AppModel {
         if case .bottleCreated = event { reload() }
     }
 
+    /// Başarısız platform kurulumunu yarım bottle'ı silip baştan dener.
+    func retryInstall(_ recipe: Recipe) {
+        guard let progress = install, progress.source == .recipe(recipe.id), progress.failedStep != nil else { return }
+        let half = progress.createsBottle ? progress.bottle : nil
+        install = nil
+        Task {
+            if let half { await removeBottle(half) }
+            installRecipe(recipe)
+        }
+    }
+
     private func finishInstall(_ bottle: Bottle) {
+        // Platform satırı kurulunca kendiliğinden "Kurulu · Aç" olur; ilerlemenin kalmasına gerek yok.
+        if case .recipe = install?.source {
+            install = nil
+            reload()
+            return
+        }
         if var progress = install {
             progress.done = Set(progress.steps)
             progress.current = nil
@@ -536,18 +580,19 @@ final class AppModel {
     }
 
     func deleteBottle(_ bottle: Bottle) {
-        let shutdown = shutdownTarget(for: bottle)
-        Task {
-            if let runner { await runner.stop(bottle, shutdown: shutdown) }
-            do {
-                try store.delete(bottle)
-                // Paneldeki biten/başarısız kurulum bu bottle'ı gösteriyorsa kapanır.
-                if install?.bottle?.id == bottle.id, install?.isActive == false { closeInstallPanel() }
-                if selectedBottleID == bottle.id { selectedBottleID = nil }
-                reload()
-            } catch {
-                show("Bottle silinemedi", error)
-            }
+        Task { await removeBottle(bottle) }
+    }
+
+    private func removeBottle(_ bottle: Bottle) async {
+        if let runner { await runner.stop(bottle, shutdown: shutdownTarget(for: bottle)) }
+        do {
+            try store.delete(bottle)
+            // Biten/başarısız kurulum bu bottle'ı gösteriyorsa kapanır.
+            if install?.bottle?.id == bottle.id, install?.isActive == false { closeInstallPanel() }
+            if selectedBottleID == bottle.id { selectedBottleID = nil }
+            reload()
+        } catch {
+            show("Bottle silinemedi", error)
         }
     }
 

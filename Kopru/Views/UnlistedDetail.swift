@@ -1,7 +1,7 @@
 import KopruCore
 import SwiftUI
 
-/// Listede olmayan kurulum dosyası: nereye kurulacağı ve ilerleme.
+/// Listede olmayan kurulum dosyasının penceresi: nereye kurulacağı ve ilerleme.
 struct UnlistedDetail: View {
     @Environment(AppModel.self) private var model
     let file: URL

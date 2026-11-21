@@ -2,6 +2,7 @@
 
 - **Tarih:** 2026-11-20
 - **Durum:** Uygulandı (2026-11-21; kurulum adımlarının elle testi ve Notepad++/WinRAR tarifleri bekliyor — bkz. planın Uygulama Notları)
+- **Güncelleme:** 2026-11-21'de sayfa yalnızca oyun platformlarına ve tek tıkla kuruluma indirildi; sağ panel, kategoriler ve "Yakında" kalktı. Bkz. [`2026-11-21-platform-kur-design.md`](2026-11-21-platform-kur-design.md).
 - **Bağlam:** v0.1'in "Kur penceresi" (500×420 sheet, düz liste) CrossOver'ın "Install a Windows Application" ekranından da zayıf. Bu tasarım onu ana pencerede bir sayfaya dönüştürür. Onaylanan görsel taslak: [`2026-11-20-kur-ekrani-taslak.html`](2026-11-20-kur-ekrani-taslak.html) (tarayıcıda açılır, tıklanabilir). Taslaktan farklar: "Haber ver" düğmesi ve süre tahmini ("Yaklaşık 4 dk") bu sürümde yok; harfli renkli simgeler yer tutucu; Enter aramada kurulum başlatmaz.
 - **Ön koşul:** v0.1 dalındaki açık iş (exe simgeleri: `WindowsIcon.swift`, `ShortcutIcon.swift`, `AppModel`/`ProgramGrid` değişiklikleri) commit'lenmiş olmalı; bu iş aynı dosyalara dokunur.
 

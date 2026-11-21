@@ -10,7 +10,7 @@ struct KopruApp: App {
                 .environment(model)
                 .frame(minWidth: 1040, minHeight: 560)
         }
-        // İlk açılış boyutu: kartlar 3 sütun, sağ panel rahat sığar (taslaktaki pencere).
+        // İlk açılış boyutu: platformlar iki sütun.
         .defaultSize(width: 1280, height: 800)
         .commands {
             // Dosya menüsü: tek pencereli uygulama; "Yeni Pencere" yerine bottle komutları.

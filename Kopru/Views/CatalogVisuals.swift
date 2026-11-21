@@ -1,7 +1,7 @@
 import KopruCore
 import SwiftUI
 
-/// Rozet rengi; anlam taşır (yeşil sorunsuz … gri test ediliyor).
+/// Rozet rengi; anlam taşır (yeşil sorunsuz … kırmızı çalışmıyor).
 enum BadgeTone {
     case green, teal, orange, red, gray
 
@@ -22,45 +22,9 @@ extension RecipeRating {
         case .perfect: .green
         case .works: .teal
         case .partial: .orange
+        case .opens: .gray
         case .broken: .red
         }
-    }
-}
-
-extension UpcomingStatus {
-    var tone: BadgeTone {
-        switch self {
-        case .testing: .gray
-        case .broken: .red
-        }
-    }
-}
-
-extension CatalogEntry {
-    /// Kartta ve panelde gösterilen uyumluluk etiketi.
-    var badge: (label: String, tone: BadgeTone) {
-        switch self {
-        case let .recipe(recipe): (recipe.rating.label, recipe.rating.tone)
-        case let .upcoming(program): (program.status.label, program.status.tone)
-        }
-    }
-
-    /// Paneldeki açıklama cümlesi.
-    var verdictText: String? {
-        switch self {
-        case let .recipe(recipe):
-            recipe.verdict
-        case let .upcoming(program):
-            switch program.status {
-            case .testing: "Bu program için kurulum tarifi hazırlanıyor."
-            case .broken: program.note ?? "Bu program şu an Köprü'de açılmıyor."
-            }
-        }
-    }
-
-    /// Bu karta ait kurulumun kaynağı; yalnızca tarifler kurulur.
-    var installSource: InstallSource? {
-        if case let .recipe(recipe) = self { .recipe(recipe.id) } else { nil }
     }
 }
 
@@ -82,21 +46,21 @@ struct RatingBadge: View {
     }
 }
 
-/// Kart ve panel simgesi: tarifin icon.png'si, yoksa kategori simgesi.
-struct EntryIcon: View {
+/// Tarifin icon.png'si; yoksa kategori simgesi.
+struct RecipeIcon: View {
     @Environment(AppModel.self) private var model
-    let entry: CatalogEntry
+    let recipe: Recipe
     var size: CGFloat = 42
 
     var body: some View {
         Group {
-            if let image = model.recipeIcon(for: entry) {
+            if let image = model.recipeIcon(for: recipe) {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
             } else {
-                Image(systemName: entry.category.symbolName)
+                Image(systemName: recipe.category.symbolName)
                     .font(.system(size: size * 0.45))
                     .foregroundStyle(.secondary)
                     .frame(width: size, height: size)

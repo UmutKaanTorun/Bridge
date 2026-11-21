@@ -27,6 +27,10 @@ struct ContentView: View {
         .sheet(item: progressBinding) { _ in
             InstallProgressView()
         }
+        .sheet(item: unlistedBinding) { request in
+            UnlistedDetail(file: request.file, defaultBottleID: model.unlistedDefaultBottleID)
+                .frame(width: 460, height: 470)
+        }
         .sheet(item: $settingsBottle) { bottle in
             BottleSettingsSheet(bottle: bottle)
         }
@@ -55,7 +59,14 @@ struct ContentView: View {
         }
     }
 
-    /// Kur sayfasındaki kurulumlar sağ panelde; yalnızca boş bottle oluşturma sheet'te görünür.
+    /// Listede olmayan kurulum dosyası kendi penceresinde; "Vazgeç", "Gizle" ya da Esc kapatır.
+    private var unlistedBinding: Binding<UnlistedRequest?> {
+        Binding(get: { model.unlistedFile.map(UnlistedRequest.init) },
+                set: { if $0 == nil { model.unlistedFile = nil } })
+    }
+
+    /// Platform kurulumları kendi satırında, listede olmayan dosya kendi penceresinde; yalnızca boş bottle
+    /// oluşturma bu sheet'te görünür.
     private var progressBinding: Binding<InstallProgress?> {
         Binding(get: { model.install?.source == .emptyBottle ? model.install : nil },
                 set: { if $0 == nil { model.install = nil } })
@@ -100,4 +111,10 @@ struct ContentView: View {
             }
         }
     }
+}
+
+/// Kurulum dosyası penceresinin kimliği.
+private struct UnlistedRequest: Identifiable {
+    let file: URL
+    var id: URL { file }
 }
