@@ -22,4 +22,35 @@ struct EngineIntegrationTests {
 
         await runner.killWineserver(prefix: bottle.url, settings: bottle.info.settings)
     }
+
+    /// "Bottle hazırlanıyor" sırasında Durdur: wineboot'un bitmesi beklenmez, bottle'da Wine kalmaz.
+    @Test func cancellingBottleCreationStopsWinebootQuickly() async throws {
+        let td = try TempDir()
+        let engine = try Engine.locate(bundleResources: nil, environment: ProcessInfo.processInfo.environment,
+                                       developmentFallback: Engine.developmentEngine)
+        let runner = WineRunner(engine: engine, paths: td.paths)
+        let factory = BottleFactory(store: BottleStore(paths: td.paths), runner: runner)
+        let task = Task { try await factory.create(name: "Durdur", settings: .default, recipeId: nil) }
+        try await Task.sleep(for: .seconds(3))
+        let clock = ContinuousClock()
+        let start = clock.now
+        task.cancel()
+        do {
+            _ = try await task.value
+            Issue.record("İptal bekleniyordu")
+        } catch let failure as InstallFailure {
+            #expect(failure.underlying is CancellationError)
+            let elapsed = clock.now - start
+            print("Durdur → dönüş: \(elapsed)")
+            #expect(elapsed < .seconds(3))
+            let bottle = try #require(failure.bottle)
+            // wineserver -k ayrı görevde; kapanmasını en çok 5 sn bekle.
+            let deadline = clock.now + .seconds(5)
+            while WineServerStatus.isRunning(prefix: bottle.url) && clock.now < deadline {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            print("Wine kapandı: \(clock.now - start)")
+            #expect(!WineServerStatus.isRunning(prefix: bottle.url))
+        }
+    }
 }

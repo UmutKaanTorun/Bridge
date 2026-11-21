@@ -24,7 +24,8 @@ public final class WineRunner: @unchecked Sendable {
         lock.withLock { (counts[bottle.folderName] ?? 0) > 0 }
     }
 
-    /// Programı başlatır ve bitmesini bekler.
+    /// Programı başlatır ve bitmesini bekler. Görev iptal edilirse süreç sonlandırılır (SIGTERM);
+    /// programın açtığı öteki Windows süreçleri için ayrıca `killWineserver` gerekir.
     /// `appName`: Dock'ta "wine" yerine görünecek ad; programın açtığı alt süreçler de devralır.
     public func run(_ target: LaunchTarget, in bottle: Bottle, desktopSize: PixelSize? = nil,
                     appName: String? = nil, extraEnvironment: [String: String] = [:]) async throws -> RunResult {
@@ -51,20 +52,27 @@ public final class WineRunner: @unchecked Sendable {
         let key = bottle.folderName
         let start = Date()
         adjust(key, by: 1)
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { [self] finished in
-                adjust(key, by: -1)
-                try? log.close()
-                continuation.resume(returning: RunResult(exitCode: finished.terminationStatus,
-                                                         duration: Date().timeIntervalSince(start)))
+        let box = ProcessBox(process)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                process.terminationHandler = { [self] finished in
+                    adjust(key, by: -1)
+                    try? log.close()
+                    continuation.resume(returning: RunResult(exitCode: finished.terminationStatus,
+                                                             duration: Date().timeIntervalSince(start)))
+                }
+                do {
+                    try process.run()
+                    // İptal süreç başlamadan geldiyse işleyici sonlandıracak süreç bulamamıştır.
+                    if Task.isCancelled { box.terminateIfRunning() }
+                } catch {
+                    adjust(key, by: -1)
+                    try? log.close()
+                    continuation.resume(throwing: error)
+                }
             }
-            do {
-                try process.run()
-            } catch {
-                adjust(key, by: -1)
-                try? log.close()
-                continuation.resume(throwing: error)
-            }
+        } onCancel: {
+            box.terminateIfRunning()
         }
     }
 

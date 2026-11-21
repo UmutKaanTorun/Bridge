@@ -94,6 +94,37 @@ struct RecipeInstallerTests {
         #expect(!started.all.contains(.started(.configuring)))
     }
 
+    @Test func cancellingWhilePreparingStopsWinebootAtOnce() async throws {
+        let td = try TempDir()
+        let installer = try installer(td, ["UYKU": "5"])
+        let recipe = try recipe(td)
+        let events = Collected<InstallEvent>()
+        let task = Task { try await installer.install(recipe, bottleName: "Steam") { events.add($0) } }
+        // wineboot 5 sn uyur; başladığı an durdur.
+        while !td.recordedLines().contains("wine wineboot --init") { try await Task.sleep(for: .milliseconds(20)) }
+        let clock = ContinuousClock()
+        let start = clock.now
+        task.cancel()
+        do {
+            _ = try await task.value
+            Issue.record("Hata bekleniyordu")
+        } catch let failure as InstallFailure {
+            #expect(failure.step == .preparing)
+            #expect(failure.bottle?.info.name == "Steam")
+            #expect(failure.underlying is CancellationError)
+        }
+        // Durdur, wineboot'un ve kayıt defteri beklemesinin bitmesini beklemez.
+        #expect(clock.now - start < .seconds(2))
+        // wineserver -k ayrı görevde çalışır; testler paralel koşarken sahte betik geç başlayabilir.
+        let deadline = clock.now + .seconds(3)
+        while !td.recordedLines().contains("wineserver -k") && clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(td.recordedLines().contains("wineserver -k"))
+        #expect(!td.recordedLines().contains("wineserver -w"))
+        #expect(!events.all.contains(.started(.downloading)))
+    }
+
     @Test func installerThatWritesNothingFails() async throws {
         let td = try TempDir()
         do {
