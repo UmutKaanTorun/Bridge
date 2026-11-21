@@ -51,6 +51,12 @@
       "key": "HKCU\\Software\\Wine\\AppDefaults\\Launcher.exe\\Direct3D",
       "name": "renderer",
       "value": "gl"
+    },
+    {
+      "action": "registry",
+      "key": "HKCU\\Software\\Wine\\AppDefaults\\Launcher.exe\\Mac Driver",
+      "name": "ShowInDock",
+      "value": "n"
     }
   ],
   "beforeLaunch": [

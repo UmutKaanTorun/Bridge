@@ -1,0 +1,57 @@
+Köprü yaması: AppDefaults\<exe>\Mac Driver\ShowInDock="n" olan program Dock'ta ayrı simge açmaz (Accessory olur).
+CrossOver 26.3.0 kaynağına uygulanır: patch -p1 < winemac-dock-gizle.patch
+
+--- a/dlls/winemac.drv/macdrv_cocoa.h
++++ b/dlls/winemac.drv/macdrv_cocoa.h
+@@ -146,6 +146,7 @@
+ extern bool retina_enabled;  /* Whether Retina mode is enabled via registry setting. */
+ extern bool retina_on;       /* Whether Retina mode is currently active (enabled and display is in default mode). */
+ extern bool enable_app_nap;
++extern bool show_in_dock; /* Köprü yaması */
+ 
+ static inline CGRect cgrect_mac_from_win(CGRect rect)
+ {
+--- a/dlls/winemac.drv/macdrv_main.c
++++ b/dlls/winemac.drv/macdrv_main.c
+@@ -60,6 +60,7 @@
+ int gl_surface_mode = GL_SURFACE_IN_FRONT_OPAQUE;
+ bool retina_enabled = false;
+ bool enable_app_nap = false;
++bool show_in_dock = true; /* Köprü yaması: AppDefaults\<exe>\Mac Driver\ShowInDock */
+ 
+ UINT64 app_icon_callback = 0;
+ UINT64 app_quit_request_callback = 0;
+@@ -389,6 +390,10 @@
+     if (!get_config_key(hkey, appkey, "EnableAppNap", buffer, sizeof(buffer)))
+         enable_app_nap = IS_OPTION_TRUE(buffer[0]);
+ 
++    /* Köprü yaması: "n" olan program Dock'ta ayrı simge açmaz (bkz. transformProcessToForeground). */
++    if (!get_config_key(hkey, appkey, "ShowInDock", buffer, sizeof(buffer)))
++        show_in_dock = IS_OPTION_TRUE(buffer[0]);
++
+     /* Don't use appkey.  The DPI and monitor sizes should be consistent for all
+        processes in the prefix. */
+     if (!get_config_key(hkey, NULL, "RetinaMode", buffer, sizeof(buffer)))
+--- a/dlls/winemac.drv/cocoa_app.m
++++ b/dlls/winemac.drv/cocoa_app.m
+@@ -301,6 +301,20 @@
+             NSString* bundleName;
+             NSString* title;
+             NSMenuItem* item;
++
++            /* Köprü yaması: AppDefaults\<exe>\Mac Driver\ShowInDock="n" olan program Dock'ta ayrı
++             * simge açmaz. Örnek: Rockstar'ın Launcher.exe'si görünür pencere açmadığı halde Dock'a
++             * düşüyor, pencereyi Social Club yardımcısı çiziyor ve iki aynı simge çıkıyordu. Süreç
++             * Accessory olur: pencereleri yine açılır ve odak alır, yalnız Dock'ta ve Cmd-Tab'de
++             * görünmez. */
++            if (!show_in_dock)
++            {
++                if ([NSApp activationPolicy] != NSApplicationActivationPolicyAccessory)
++                    [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
++                if (activateIfTransformed)
++                    [self tryToActivateIgnoringOtherApps:YES];
++                return;
++            }
+ 
+             /* CW HACK 24141: Prevent dock icon creation for certain apps. */
+             {

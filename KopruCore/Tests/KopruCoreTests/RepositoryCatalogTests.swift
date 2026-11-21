@@ -73,6 +73,16 @@ struct RepositoryCatalogTests {
         #expect(catalog.recipe(id: "rockstar")?.bottle.settings.wined3dPrograms == ["Launcher.exe"])
     }
 
+    /// Rockstar'ın Launcher.exe'si görünür pencere açmadığı halde Dock'a düşüyor; pencereyi Social Club
+    /// yardımcısı çiziyor ve Dock'ta iki aynı simge çıkıyordu. Motor yaması
+    /// (Tools/motor-yamalari/winemac-dock-gizle.patch) ShowInDock="n" olan programı Dock'a koymaz.
+    @Test func rockstarLauncherStaysOutOfDock() throws {
+        let recipe = try #require(try Self.load().recipe(id: "rockstar"))
+        let action = RecipeAction.registry(key: "HKCU\\Software\\Wine\\AppDefaults\\Launcher.exe\\Mac Driver",
+                                           name: "ShowInDock", value: "n")
+        #expect(recipe.afterInstall.contains(action))
+    }
+
     /// Her `helperProxy` eyleminin aracısı tarif dosyalarında, yardımcıyla aynı adla ve onu tanıtan işaretle var
     /// (Tools/cef-araci/derle.sh).
     @Test func helperProxiesAreBuilt() throws {
