@@ -53,8 +53,10 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     postBuildScripts:
+      # Betik dosyadan çağrılır: `path:` xcodegen'in o anki içeriği projeye gömmesine yol açıyordu ve
+      # proje yeniden oluşturulmadıkça betikteki değişiklikler derlemeye geçmiyordu.
       - name: Motoru pakete kopyala (yalnızca Release)
-        path: Scripts/bundle-engine.sh
+        script: '"${SRCROOT}/Scripts/bundle-engine.sh"'
         basedOnDependencyAnalysis: false
 schemes:
   Kopru:

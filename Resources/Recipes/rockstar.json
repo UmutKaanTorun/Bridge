@@ -6,7 +6,7 @@
   "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
   "rating": "opens",
-  "verdict": "Kurulum ve giriş ekranı çalışıyor (arayüz İngilizce). Giriş yapıp oyun indirmek henüz denenmedi.",
+  "verdict": "Kurulum ve hesapla giriş çalışıyor, kitaplık ve mağaza açılıyor (arayüz İngilizce). Oyun indirmek henüz denenmedi.",
   "testedOn": {
     "date": "2026-11-21",
     "hardware": "Apple M3",

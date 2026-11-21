@@ -29,3 +29,13 @@ mkdir -p "$DST"
 # ayarındaki programlar için onu DLL yolunun başına koyar (Tools/motor-yamalari/ntdll-program-basina-wined3d.patch).
 rsync -a --delete --exclude 'include/' "$SRC/" "$DST/"
 echo "Motor kopyalandı: $DST"
+
+# Xcode motor dosyalarını imzalama adımının girdisi saymıyor: yalnız motor değiştiğinde (ör. yeni ntdll.so)
+# CodeSign adımı atlanıyor ve paketin imzası bozuk kalıyordu ("a sealed resource is missing or invalid").
+# Paket burada yeniden imzalanır; Xcode'un kendi CodeSign adımı çalışırsa üstüne yine imzalar.
+APP="${TARGET_BUILD_DIR}/${WRAPPER_NAME}"
+if [ -x "$APP/Contents/MacOS/${EXECUTABLE_NAME}" ]; then
+  codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" --timestamp=none "$APP"
+  codesign --verify --strict "$APP"
+  echo "Paket yeniden imzalandı: $APP"
+fi

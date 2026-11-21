@@ -1,0 +1,120 @@
+Köprü yaması: Wine aynı kurala uyan saat dilimlerinden ana makinenin saat dilimine karşılık geleni seçer (macOS ICU: IANA adı → Windows anahtarı).
+Örn. Europe/Istanbul artık "Arab Standard Time" değil "Turkey Standard Time"; Rockstar girişi 1.000.7 hatası buydu.
+CrossOver 26.3.0 kaynağına öteki Köprü yamalarından sonra uygulanır: patch -p1 < ntdll-saat-dilimi.patch
+
+--- a/dlls/ntdll/unix/system.c
++++ b/dlls/ntdll/unix/system.c
+@@ -2785,6 +2785,67 @@
+     if (info->Type != type) return FALSE;
+     memcpy( data, info->Data, info->DataLength );
+     return TRUE;
++}
++
++#ifdef __APPLE__
++#include <dlfcn.h>
++#endif
++
++/* Köprü yaması: ana makinenin saat dilimine karşılık gelen Windows saat dilimi anahtarı.
++ * Wine saat dilimini kuralından (fark, yaz saati) bulup kayıt defterindeki ilk uyan kaydı seçiyor;
++ * aynı kurala uyan birden çok kayıt olunca (ör. +03, yaz saati yok: Arab, Jordan, Syria, Turkey…)
++ * Europe/Istanbul "Arab Standard Time" (Riyad) çıkıyordu. Programlar bunu ICU üzerinden
++ * Asia/Riyadh olarak görüyor; Rockstar girişi bu yüzden 1.000.7 ile reddediyordu.
++ * macOS'ta IANA adı TZ'den ya da /etc/localtime bağlantısından alınır, Windows karşılığı
++ * sistemin ICU'sundan (ucal_getWindowsTimeZoneID). timezone_mutex altında bir kez hesaplanır. */
++static const WCHAR *kopru_host_tz_key(void)
++{
++#ifdef __APPLE__
++    typedef int (*windows_id_fn)( const WCHAR *id, int len, WCHAR *winid, int capacity, int *status );
++    static WCHAR key[128];
++    static BOOL done;
++    char path[1024];
++    const char *tz = getenv( "TZ" ), *iana = NULL, *p;
++    WCHAR ianaW[128];
++    windows_id_fn windows_id;
++    void *icu;
++    int i, len, status = 0;
++    ssize_t n;
++
++    if (done) return key[0] ? key : NULL;
++    done = TRUE;
++
++    if (tz && *tz)
++    {
++        if (*tz == ':') tz++;
++        iana = (p = strstr( tz, "zoneinfo/" )) ? p + 9 : tz;
++    }
++    else if ((n = readlink( "/etc/localtime", path, sizeof(path) - 1 )) > 0)
++    {
++        path[n] = 0;
++        if ((p = strstr( path, "zoneinfo/" ))) iana = p + 9;
++    }
++    if (!iana || !*iana || strlen( iana ) >= ARRAY_SIZE(ianaW)) return NULL;
++    for (i = 0; iana[i]; i++)
++    {
++        if ((unsigned char)iana[i] >= 0x80) return NULL;
++        ianaW[i] = iana[i];
++    }
++
++    if (!(icu = dlopen( "/usr/lib/libicucore.A.dylib", RTLD_LAZY | RTLD_LOCAL ))) return NULL;
++    if (!(windows_id = (windows_id_fn)dlsym( icu, "ucal_getWindowsTimeZoneID" ))) return NULL;
++    len = windows_id( ianaW, i, key, ARRAY_SIZE(key) - 1, &status );
++    if (status > 0 || len <= 0 || len >= ARRAY_SIZE(key))
++    {
++        key[0] = 0;
++        return NULL;
++    }
++    key[len] = 0;
++    TRACE( "Kopru: host time zone %s -> %s\n", iana, debugstr_w(key) );
++    return key;
++#else
++    return NULL;
++#endif
+ }
+ 
+ static void find_reg_tz_info(RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi, const char* tz_name, int year)
+@@ -2803,6 +2864,9 @@
+         'T','i','m','e',' ','Z','o','n','e','s',0 };
+     static const WCHAR Dynamic_DstW[] = { 'D','y','n','a','m','i','c',' ','D','S','T',0 };
+     RTL_DYNAMIC_TIME_ZONE_INFORMATION reg_tzi;
++    RTL_DYNAMIC_TIME_ZONE_INFORMATION first_match; /* Köprü yaması */
++    BOOL have_first_match = FALSE;
++    const WCHAR *host_key = kopru_host_tz_key();
+     HANDLE key, subkey, subkey_dyn = 0;
+     ULONG idx, len;
+     OBJECT_ATTRIBUTES attr;
+@@ -2881,15 +2945,31 @@
+ 
+         if (match_tz_info( tzi, &reg_tzi ) && match_tz_name( tz_name, &reg_tzi ))
+         {
+-            *tzi = reg_tzi;
+-            NtClose( subkey );
+-            NtClose( key );
+-            return;
++            /* Köprü yaması: uyan kayıtlardan ana makinenin saat dilimine karşılık geleni seç;
++             * o yoksa (ya da uymuyorsa) eskisi gibi ilk uyan kayıt. */
++            if (!host_key || !wcscmp( reg_tzi.TimeZoneKeyName, host_key ))
++            {
++                *tzi = reg_tzi;
++                NtClose( subkey );
++                NtClose( key );
++                return;
++            }
++            if (!have_first_match)
++            {
++                first_match = reg_tzi;
++                have_first_match = TRUE;
++            }
+         }
+     next:
+         NtClose( subkey );
+     }
+     NtClose( key );
++
++    if (have_first_match)  /* Köprü yaması */
++    {
++        *tzi = first_match;
++        return;
++    }
+ 
+     if (idx == 1) return;  /* registry info not initialized yet */
+ 

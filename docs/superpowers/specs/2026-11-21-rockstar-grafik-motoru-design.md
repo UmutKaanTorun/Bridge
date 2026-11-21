@@ -14,6 +14,7 @@
 | Öneri | **Program başına grafik arka ucu**: Launcher wined3d (OpenGL) ile, oyunlar ve geri kalan her şey DXMT ile. Küçük bir ntdll yaması + tarif alanı, ~1 gün. Social Club'ın beyaz penceresi ayrı iş. |
 | Uygulama (4. bölüm) | Yapıldı ve Köprü'nün açılış akışıyla denendi: Launcher kendi ekranını çiziyor, Social Club'ı kuruyor, Sign In penceresini açıyor; `SocialClubHelper.exe` DXMT'de kalıyor. Kurulumdaki dil penceresi de düzeldi: tarif `/quiet` yerine Rockstar'ın kendi sessiz argümanı `/s /f`'yi kullanıyor. |
 | Social Club (5. bölüm) | **Düzeldi:** giriş penceresi çiziliyor. Neden: CEF'in ayrı GPU süreci tarayıcı sürecinin penceresine swapchain açamıyor (DXMT `cross-process swapchain not supported`). Çözüm: yeni `helperProxy` tarif eylemi `SocialClubHelper.exe`'nin önüne `--in-process-gpu` ekleyen aracıyı koyuyor. Tarif notu "opens". |
+| Hesapla giriş (6. bölüm) | **Düzeldi:** giriş 1.000.7 ile reddediliyordu. Neden: Wine İstanbul'u "Arab Standard Time" (Riyad) olarak gösteriyordu. Çözüm: ntdll yaması (`ntdll-saat-dilimi.patch`), ana makinenin saat dilimine karşılık gelen Windows kaydını seçiyor. Umut'un hesabıyla giriş, kitaplık ve mağaza açıldı. |
 
 ## 1. DXMT'nin yeni sürümü
 
@@ -106,6 +107,31 @@ Sonraki adım (C'den sonra): Social Club'ın Sign In penceresi. Çözüldü, bkz
 - İkinci açılış: `beforeLaunch` hatasız, giriş ekranı +30 sn'de.
 - **Sıfırdan, Köprü'nün kurulum + açılış akışıyla** (`PlatformTrialTests`, temiz kök, `/s /f`): indirme 1 sn, kurulum 11 sn, `afterInstall` 1 sn (toplam 30 sn, detect tamam). Açılışta +15/45 sn Launcher ekranı, +60 sn'den sonuna kadar giriş ekranı çizili, dil sorulmadı (arayüz İngilizce). İki kez tekrarlandı.
 - Giriş yapmak ve oyun indirmek denenmedi (hesap gerekiyor).
+
+## 6. Hesapla giriş: saat dilimi (düzeldi)
+
+**Belirti:** Umut'un gerçek bottle'ında (Köprü Release, `/s /f` kurulum) Sign In çiziliyor ama giriş "Sorry, we are unable to handle your request at this time", **#1.000.7** veriyordu. Rockstar'ın açıklamasına göre bu bir "bağlantı sorunu".
+
+**Ayırma:**
+- Aynı hesap ve aynı ağda tarayıcıda giriş oluyordu → hesap ve ağ değil, Wine tarafı.
+- Social Club günlüklerinde giriş isteği yok; giriş web sayfasının kendi isteği.
+- Bottle'da saat doğru (18:14, +03), ama `TimeZoneKeyName` "Arab Standard Time".
+
+**Kök neden:** Wine (`dlls/ntdll/unix/system.c`, `find_reg_tz_info`) saat dilimini ana makinenin kuralından (fark, yaz saati) hesaplayıp kayıt defterindeki **ilk uyan** kaydı seçiyor; her süreçte yeniden hesaplandığı için kayıt defterini düzeltmek yetmez. Europe/Istanbul (+03, yaz saati yok) için alfabede ilk uyan "Arab Standard Time"; sonra Arabic, Belarus, E. Africa, Russian, Jordan, Syria, en son Turkey. Chromium (ICU) bunu Asia/Riyadh olarak görüyor; Rockstar Türkiye IP'si + Riyad saati bileşimini reddediyor. CrossOver forumunda aynı hatayı bottle'daki saat dilimini ve bölgeyi düzelterek aşan kullanıcılar var.
+
+**Doğrulama (önce/sonra):**
+- Bottle kopyasında "Turkey"den önce gelen +03 kayıtları silinince Wine "Turkey Standard Time" seçti; aynı hesapla giriş oldu ("Signed in online"), kitaplık ve mağaza açıldı. Kopya silindi.
+- Yama sonrası asıl bottle'ın kendisinde (değişen tek şey motor) giriş oldu.
+
+**Çözüm:** [`Tools/motor-yamalari/ntdll-saat-dilimi.patch`](../../../Tools/motor-yamalari/ntdll-saat-dilimi.patch).
+- `kopru_host_tz_key()`: IANA adını `TZ`'den ya da `/etc/localtime` bağlantısından alır, macOS'un ICU'sundaki `ucal_getWindowsTimeZoneID` ile Windows anahtarına çevirir (`dlopen /usr/lib/libicucore.A.dylib`). `timezone_mutex` altında bir kez hesaplanır.
+- `find_reg_tz_info` uyan kayıtlardan bu anahtarı seçer; o yoksa ya da uymuyorsa eskisi gibi ilk uyan kayıt.
+- Denendi: İstanbul → Turkey, Riyad → Arab, Amman → Jordan, Berlin → W. Europe, New York → Eastern, Moskova → Russian, Tokyo → Tokyo, UTC → UTC; saat değişmiyor.
+- Kurulu: geliştirme motoru (önceki `ntdll.so` → `~/WineBuild/yedek/ntdll.so.wined3d`) ve Release paketi.
+
+**Yan bulgu, Release paketleme:** yalnız motor değiştiğinde Xcode CodeSign adımını atlıyordu, paketin imzası bozuk kalıyordu. Ayrıca xcodegen `path:` ile verilen `bundle-engine.sh`'yi projeye gömdüğü için Xcode betiğin eski bir kopyasını çalıştırıyordu (Gecko/Mono denetimi hiç çalışmamıştı). Düzeltme: `project.yml` betiği dosyadan çağırıyor (`script: "${SRCROOT}/Scripts/bundle-engine.sh"`); betik motoru kopyaladıktan sonra paketi yeniden imzalıyor ve imzayı doğruluyor.
+
+**Kalan:** oyun indirme denenmedi. Kitaplıkta GTA V Enhanced var, ama diskte 29 GB boş yer var ve oyun bundan büyük.
 
 ## Deneme düzeni (yeniden üretmek için)
 
