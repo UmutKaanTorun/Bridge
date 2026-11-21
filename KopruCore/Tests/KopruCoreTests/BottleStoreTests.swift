@@ -100,7 +100,7 @@ struct BottleStoreTests {
         let bottle = try BottleStore(paths: td.paths)
             .importBottle(from: td.url.appendingPathComponent("eski"), name: "Eski", catalog: nil)
         #expect(bottle.info.recipeId == nil)
-        #expect(bottle.info.settings == BottleSettings(msync: true, virtualDesktop: .off, fpsHud: false))
+        #expect(bottle.info.settings == BottleSettings(msync: true, fpsHud: false))
     }
 
     @Test func importRejectsNonBottle() throws {

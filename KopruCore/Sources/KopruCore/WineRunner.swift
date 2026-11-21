@@ -27,10 +27,9 @@ public final class WineRunner: @unchecked Sendable {
     /// Programı başlatır ve bitmesini bekler. Görev iptal edilirse süreç sonlandırılır (SIGTERM);
     /// programın açtığı öteki Windows süreçleri için ayrıca `killWineserver` gerekir.
     /// `appName`: Dock'ta "wine" yerine görünecek ad; programın açtığı alt süreçler de devralır.
-    public func run(_ target: LaunchTarget, in bottle: Bottle, desktopSize: PixelSize? = nil,
+    public func run(_ target: LaunchTarget, in bottle: Bottle,
                     appName: String? = nil, extraEnvironment: [String: String] = [:]) async throws -> RunResult {
-        let desktop = desktopSize.map { DesktopWindow(name: "Kopru-\(bottle.folderName)", size: $0) }
-        let arguments = WineArguments.arguments(for: target, desktop: desktop)
+        let arguments = WineArguments.arguments(for: target)
 
         let process = Process()
         process.executableURL = engine.wine

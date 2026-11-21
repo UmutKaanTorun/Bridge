@@ -98,7 +98,7 @@ public struct BottleStore: Sendable {
         try fm.moveItem(at: source, to: destination)
 
         let recipe = catalog?.detect(in: destination)
-        let settings = recipe?.bottle.settings ?? BottleSettings(msync: true, virtualDesktop: .off, fpsHud: false)
+        let settings = recipe?.bottle.settings ?? BottleSettings(msync: true, fpsHud: false)
         let bottle = Bottle(url: destination, info: BottleInfo(name: name, createdAt: now, recipeId: recipe?.id, settings: settings))
         try save(bottle)
         return bottle

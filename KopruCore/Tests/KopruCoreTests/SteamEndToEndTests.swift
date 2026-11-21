@@ -39,7 +39,7 @@ struct SteamEndToEndTests {
         }
         let launch = Task {
             try await runner.run(.windowsPath(recipe.launch.windowsPath, arguments: recipe.launch.arguments(forBottleAt: bottle.url)),
-                                 in: bottle, desktopSize: PixelSize(width: 1280, height: 800))
+                                 in: bottle)
         }
 
         let steamLogs = bottle.driveC.appendingPathComponent("Program Files (x86)/Steam/logs")

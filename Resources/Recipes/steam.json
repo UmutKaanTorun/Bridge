@@ -11,13 +11,12 @@
   "downloadNote": "2 MB kurulum dosyası; ilk açılışta Steam kendini günceller (diskte yaklaşık 1,9 GB)",
   "highlights": [
     { "title": "Tarayıcı yardımcısı düzeltmesi", "detail": "Mağaza penceresi siyah açılmaz" },
-    { "title": "Sanal masaüstü", "detail": "Pencere sol üste yapışmaz, kesilmez" },
     { "title": "Steam katmanı kapalı", "detail": "Oyun açılırken çökmeyi önler" },
     { "title": "MSync açık", "detail": "Oyunlarda daha akıcı kare hızı" }
   ],
   "bottle": {
     "defaultName": "Steam",
-    "settings": { "msync": true, "virtualDesktop": { "mode": "auto" }, "fpsHud": false }
+    "settings": { "msync": true, "fpsHud": false }
   },
   "installer": {
     "url": "https://cdn.cloudflare.steamstatic.com/client/installer/SteamSetup.exe",

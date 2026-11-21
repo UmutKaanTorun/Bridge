@@ -40,13 +40,14 @@ struct WineRunnerTests {
         #expect(td.recordedLines().dropFirst().first?.hasSuffix("/Indirilenler") == true)
     }
 
-    @Test func extraEnvironmentAndDesktop() async throws {
+    /// Program doğrudan açılır; sanal masaüstü (explorer /desktop) Mac'te çalışmadığı için kullanılmaz.
+    @Test func extraEnvironmentAndNoDesktop() async throws {
         let td = try TempDir()
         let (runner, bottle) = try setUp(td)
         _ = try await runner.run(.windowsPath("C:\\a.exe", arguments: []), in: bottle,
-                                 desktopSize: PixelSize(width: 800, height: 600), extraEnvironment: ["WINEMSYNC": "0"])
+                                 extraEnvironment: ["WINEMSYNC": "0"])
         let lines = td.recordedLines()
-        #expect(lines.first == "wine explorer /desktop=Kopru-Deneme,800x600 C:\\a.exe")
+        #expect(lines.first == "wine C:\\a.exe")
         #expect(lines.dropFirst().first?.contains("WINEMSYNC=0") == true)
     }
 

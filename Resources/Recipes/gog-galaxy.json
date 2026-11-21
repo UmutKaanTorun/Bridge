@@ -23,9 +23,6 @@
     "defaultName": "GOG Galaxy",
     "settings": {
       "msync": true,
-      "virtualDesktop": {
-        "mode": "auto"
-      },
       "fpsHud": false
     }
   },

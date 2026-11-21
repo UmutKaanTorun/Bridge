@@ -9,7 +9,7 @@ struct BottleInfoTests {
             name: "Oyunlarım",
             createdAt: Date(timeIntervalSince1970: 1_795_000_000),
             recipeId: "steam",
-            settings: BottleSettings(msync: true, virtualDesktop: .auto, fpsHud: false),
+            settings: BottleSettings(msync: true, fpsHud: false),
             pinnedPrograms: [PinnedProgram(name: "Araç", windowsPath: "C:\\arac.exe")],
             hiddenShortcuts: ["Steam/Steam.lnk"]
         )
@@ -17,8 +17,28 @@ struct BottleInfoTests {
 
         let json = try String(contentsOf: td.url.appendingPathComponent("kopru.json"), encoding: .utf8)
         #expect(json.contains(#""schema" : 1"#))
-        #expect(json.contains(#""mode" : "auto""#))
+        #expect(json.contains(#""msync" : true"#))
         #expect(try BottleInfo.read(from: td.url) == info)
+    }
+
+    /// Sanal masaüstü kaldırılmadan önce kurulan bottle'ların kopru.json'u (alan okunurken yok sayılır).
+    @Test func readsLegacyKopruJSONWithVirtualDesktop() throws {
+        let td = try TempDir()
+        let legacy = """
+        {
+          "createdAt" : "2026-11-20T16:54:59Z",
+          "hiddenShortcuts" : [],
+          "name" : "Steam",
+          "pinnedPrograms" : [],
+          "recipeId" : "steam",
+          "schema" : 1,
+          "settings" : { "fpsHud" : false, "msync" : true, "virtualDesktop" : { "mode" : "auto" } }
+        }
+        """
+        try Data(legacy.utf8).write(to: td.url.appendingPathComponent("kopru.json"))
+        let info = try BottleInfo.read(from: td.url)
+        #expect(info.name == "Steam")
+        #expect(info.settings == BottleSettings(msync: true, fpsHud: false))
     }
 
     @Test func missingRecipeIsOmitted() throws {

@@ -17,6 +17,17 @@ struct RepositoryCatalogTests {
                                upcomingFile: resources.appendingPathComponent("Catalog/upcoming.json"))
     }
 
+    /// Sanal masaüstü Köprü'den kaldırıldı (Wine'ın Mac sürücüsünde yok); tariflerde ölü ayar kalmasın.
+    @Test func recipesHaveNoVirtualDesktop() throws {
+        let files = try FileManager.default.contentsOfDirectory(at: Self.resources.appendingPathComponent("Recipes"),
+                                                                includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "json" }
+        #expect(!files.isEmpty)
+        for file in files {
+            #expect(!(try String(contentsOf: file, encoding: .utf8)).contains("virtualDesktop"), "\(file.lastPathComponent)")
+        }
+    }
+
     @Test func everyFileLoads() throws {
         let catalog = try Self.load()
         #expect(catalog.problems.isEmpty, "\(catalog.problems)")

@@ -24,7 +24,7 @@ extension Recipe {
             category: category,
             rating: rating,
             bottle: RecipeBottle(defaultName: name,
-                                 settings: BottleSettings(msync: true, virtualDesktop: .auto, fpsHud: false)),
+                                 settings: BottleSettings(msync: true, fpsHud: false)),
             installer: RecipeInstallerSpec(url: installerURL, sha256: sha256, fileName: "SteamSetup.exe", arguments: ["/S"]),
             afterInstall: afterInstall,
             beforeLaunch: beforeLaunch,

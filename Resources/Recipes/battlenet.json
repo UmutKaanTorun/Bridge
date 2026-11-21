@@ -27,9 +27,6 @@
     "defaultName": "Battle.net",
     "settings": {
       "msync": true,
-      "virtualDesktop": {
-        "mode": "auto"
-      },
       "fpsHud": false
     }
   },

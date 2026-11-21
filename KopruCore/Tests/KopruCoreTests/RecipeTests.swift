@@ -15,7 +15,6 @@ struct RecipeTests {
         let recipe = try JSONDecoder().decode(Recipe.self, from: Data(contentsOf: Self.steamJSON))
         #expect(recipe.id == "steam")
         #expect(recipe.rating == .works)
-        #expect(recipe.bottle.settings.virtualDesktop == .auto)
         #expect(recipe.installer.sha256 == nil)
         #expect(recipe.installer.arguments == ["/S"])
         #expect(recipe.afterInstall == [.registry(key: "HKCU\\Software\\Wine\\DllOverrides", name: "gameoverlayrenderer64", value: "")])
@@ -82,7 +81,7 @@ struct RecipeTests {
         #expect(recipe.publisher == "Valve")
         #expect(recipe.summary == "Oyun mağazası ve başlatıcısı")
         #expect(recipe.testedOn == RecipeTestInfo(date: "2026-11-20", hardware: "Apple M3", macOS: "26.6"))
-        #expect(recipe.highlights?.map(\.title) == ["Tarayıcı yardımcısı düzeltmesi", "Sanal masaüstü",
+        #expect(recipe.highlights?.map(\.title) == ["Tarayıcı yardımcısı düzeltmesi",
                                                     "Steam katmanı kapalı", "MSync açık"])
         #expect(recipe.verdict?.isEmpty == false)
         #expect(recipe.downloadNote?.isEmpty == false)

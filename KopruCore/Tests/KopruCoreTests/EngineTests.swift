@@ -48,7 +48,7 @@ struct EngineTests {
         let engine = Engine(root: URL(fileURLWithPath: "/Motor", isDirectory: true))
         let prefix = URL(fileURLWithPath: "/Bottles/Steam", isDirectory: true)
         let env = engine.environment(prefix: prefix,
-                                     settings: BottleSettings(msync: true, virtualDesktop: .off, fpsHud: false),
+                                     settings: BottleSettings(msync: true, fpsHud: false),
                                      base: ["PATH": "/usr/bin:/bin", "MTL_HUD_ENABLED": "1"])
         #expect(env["PATH"] == "/usr/bin:/bin")
         #expect(env["WINEPREFIX"] == "/Bottles/Steam")
@@ -64,7 +64,7 @@ struct EngineTests {
     @Test func environmentFollowsSettingsAndKeepsWineDebug() {
         let engine = Engine(root: URL(fileURLWithPath: "/Motor", isDirectory: true))
         let env = engine.environment(prefix: URL(fileURLWithPath: "/B"),
-                                     settings: BottleSettings(msync: false, virtualDesktop: .off, fpsHud: true),
+                                     settings: BottleSettings(msync: false, fpsHud: true),
                                      base: ["WINEDEBUG": "+loaddll"])
         #expect(env["WINEMSYNC"] == "0")
         #expect(env["MTL_HUD_ENABLED"] == "1")

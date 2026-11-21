@@ -29,7 +29,6 @@ struct RecipeInstallerTests {
 
         #expect(bottle.info.name == "Steam")
         #expect(bottle.info.recipeId == "steam")
-        #expect(bottle.info.settings.virtualDesktop == .auto)
         let steps = events.all.filter { if case .progress = $0 { false } else { true } }
         #expect(steps == [.started(.preparing), .bottleCreated(bottle), .finished(.preparing),
                           .started(.downloading), .finished(.downloading),

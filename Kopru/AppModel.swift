@@ -272,7 +272,6 @@ final class AppModel {
 
     private func start(_ target: LaunchTarget, name: String, in bottle: Bottle, runner: WineRunner) {
         let recipe = recipe(for: bottle)
-        let desktopSize = bottle.info.settings.virtualDesktop.size(visibleScreen: Self.visibleScreen())
         let actions = RecipeActionPerformer(runner: runner, catalog: catalog)
         runningCounts[bottle.id, default: 0] += 1
         Task {
@@ -285,7 +284,7 @@ final class AppModel {
                     try await actions.perform(recipe.beforeLaunch, recipe: recipe, bottle: bottle)
                     startGuard(recipe: recipe, bottle: bottle, runner: runner, actions: actions)
                 }
-                let result = try await runner.run(target, in: bottle, desktopSize: desktopSize, appName: name)
+                let result = try await runner.run(target, in: bottle, appName: name)
                 if result.exitCode != 0 && result.duration < 5 {
                     alert = AppAlert(title: "\(name) hemen kapandı",
                                      message: "Program açıldıktan hemen sonra kapandı (çıkış kodu \(result.exitCode)). Ayrıntılar günlük dosyasında.",
@@ -310,11 +309,6 @@ final class AppModel {
             })
             guardedBottles.remove(bottle.id)
         }
-    }
-
-    private static func visibleScreen() -> PixelSize {
-        let frame = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1640, height: 1040)
-        return PixelSize(width: Int(frame.width), height: Int(frame.height))
     }
 
     func removeFromList(_ item: ProgramItem) {

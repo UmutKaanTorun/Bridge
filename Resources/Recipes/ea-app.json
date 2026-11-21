@@ -27,9 +27,6 @@
     "defaultName": "EA App",
     "settings": {
       "msync": true,
-      "virtualDesktop": {
-        "mode": "auto"
-      },
       "fpsHud": false
     }
   },

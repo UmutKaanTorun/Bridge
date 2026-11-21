@@ -3,16 +3,11 @@ import KopruCore
 import SwiftUI
 
 struct BottleSettingsSheet: View {
-    private enum DesktopMode: Hashable { case off, auto, fixed }
-
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     let bottle: Bottle
     @State private var name: String
     @State private var msync: Bool
-    @State private var desktopMode: DesktopMode
-    @State private var width: Int
-    @State private var height: Int
     @State private var fpsHud: Bool
     @State private var confirmDelete = false
 
@@ -22,32 +17,12 @@ struct BottleSettingsSheet: View {
         _name = State(initialValue: bottle.info.name)
         _msync = State(initialValue: settings.msync)
         _fpsHud = State(initialValue: settings.fpsHud)
-        switch settings.virtualDesktop {
-        case .off:
-            _desktopMode = State(initialValue: .off)
-            _width = State(initialValue: 1280)
-            _height = State(initialValue: 800)
-        case .auto:
-            _desktopMode = State(initialValue: .auto)
-            _width = State(initialValue: 1280)
-            _height = State(initialValue: 800)
-        case let .fixed(width, height):
-            _desktopMode = State(initialValue: .fixed)
-            _width = State(initialValue: width)
-            _height = State(initialValue: height)
-        }
     }
 
     private var settings: BottleSettings {
-        let desktop: VirtualDesktop = switch desktopMode {
-        case .off: .off
-        case .auto: .auto
-        case .fixed: .fixed(width: max(640, width), height: max(480, height))
-        }
         // Pencerede gösterilmeyen ayarlar (ör. tarifin wined3d programları) olduğu gibi kalır.
         var settings = bottle.info.settings
         settings.msync = msync
-        settings.virtualDesktop = desktop
         settings.fpsHud = fpsHud
         return settings
     }
@@ -62,18 +37,6 @@ struct BottleSettingsSheet: View {
                     Text("Kaydedince bottle'daki açık programlar kapatılacak.")
                         .font(.caption)
                         .foregroundStyle(.orange)
-                }
-                Picker("Sanal masaüstü", selection: $desktopMode) {
-                    Text("Kapalı").tag(DesktopMode.off)
-                    Text("Ekrana göre").tag(DesktopMode.auto)
-                    Text("Elle").tag(DesktopMode.fixed)
-                }
-                if desktopMode == .fixed {
-                    HStack {
-                        TextField("Genişlik", value: $width, format: .number)
-                        Text("×")
-                        TextField("Yükseklik", value: $height, format: .number)
-                    }
                 }
                 Toggle("FPS göstergesi", isOn: $fpsHud)
             }
