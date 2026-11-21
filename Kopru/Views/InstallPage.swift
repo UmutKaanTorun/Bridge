@@ -26,11 +26,8 @@ struct InstallPage: View {
                 } else {
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 0) {
                         ForEach(platforms) { recipe in
-                            VStack(spacing: 0) {
-                                PlatformRow(recipe: recipe)
-                                    .padding(.vertical, 4)
-                                Divider().padding(.leading, 12)
-                            }
+                            PlatformRow(recipe: recipe)
+                                .padding(.vertical, 4)
                         }
                     }
                 }
