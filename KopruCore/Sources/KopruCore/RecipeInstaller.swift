@@ -25,7 +25,8 @@ public struct RecipeInstaller: Sendable {
         self.downloadsDirectory = downloadsDirectory
     }
 
-    /// Hata her zaman `InstallFailure` olarak gelir.
+    /// Hata her zaman `InstallFailure` olarak gelir. Görev iptal edilirse (kullanıcı durdurdu) altta
+    /// `CancellationError` olur; kurulum programı çalışıyorsa bottle'ın wineserver'ı öldürülür.
     public func install(_ recipe: Recipe, bottleName: String,
                         onEvent: @escaping @Sendable (InstallEvent) -> Void) async throws -> Bottle {
         onEvent(.started(.preparing))
@@ -47,9 +48,16 @@ public struct RecipeInstaller: Sendable {
             }
         }
         try await step(.installing, bottle, onEvent) {
-            let result = try await runner.run(.unixFile(installerFile, arguments: recipe.installer.arguments), in: bottle,
-                                              appName: recipe.name)
+            // Takılan kurulum programı durdurulabilsin: görev iptal edilince bottle'daki Windows süreçleri kapatılır.
+            let result = try await withTaskCancellationHandler {
+                try await runner.run(.unixFile(installerFile, arguments: recipe.installer.arguments), in: bottle,
+                                     appName: recipe.name)
+            } onCancel: {
+                Task { await runner.killWineserver(prefix: bottle.url, settings: bottle.info.settings) }
+            }
+            try Task.checkCancellation()
             guard result.exitCode == 0 else { throw InstallError.installerFailed(exitCode: result.exitCode) }
+            guard recipe.isInstalled(in: bottle.url) else { throw InstallError.programMissing(recipe.name) }
         }
         try await step(.configuring, bottle, onEvent) {
             try await actions.perform(recipe.afterInstall, recipe: recipe, bottle: bottle)
@@ -61,9 +69,10 @@ public struct RecipeInstaller: Sendable {
                       _ body: () async throws -> Void) async throws {
         onEvent(.started(step))
         do {
+            try Task.checkCancellation()
             try await body()
         } catch {
-            throw InstallFailure(step: step, bottle: bottle, underlying: error)
+            throw InstallFailure(step: step, bottle: bottle, underlying: Task.isCancelled ? CancellationError() : error)
         }
         onEvent(.finished(step))
     }

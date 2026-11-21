@@ -82,6 +82,14 @@ public struct RecipeCatalog: Sendable {
         return CatalogSections(ready: entries.filter(\.isReady), upcoming: entries.filter { !$0.isReady })
     }
 
+    /// Kur sayfasındaki oyun platformları (oyun kategorisindeki tarifler): önce iyi çalışanlar, sonra ada göre.
+    public func platforms(matching query: String) -> [Recipe] {
+        let folded = SearchText.fold(query.trimmingCharacters(in: .whitespacesAndNewlines))
+        return recipes
+            .filter { $0.category == .game && CatalogEntry.recipe($0).matches(folded: folded) }
+            .sorted { ($0.rating.rank, $0.name.lowercased()) < ($1.rating.rank, $1.name.lowercased()) }
+    }
+
     /// Kategori kapsülündeki sayı (aramadan bağımsız); nil = hepsi.
     public func count(in category: RecipeCategory?) -> Int {
         allEntries.filter { category == nil || $0.category == category }.count

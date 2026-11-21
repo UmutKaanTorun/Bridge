@@ -20,6 +20,19 @@ struct RecipeCatalogTests {
         #expect(sections.upcoming.map(\.name) == ["Eski Başlatıcı", "Logo Go 3 / Tiger"])
     }
 
+    @Test func platformsAreGameRecipesBestFirst() {
+        let catalog = RecipeCatalog(
+            recipes: [.fixture(id: "epic", name: "Epic Games Launcher", rating: .broken, publisher: "Epic Games"),
+                      .fixture(id: "ubisoft", name: "Ubisoft Connect", rating: .partial),
+                      .fixture(id: "steam", name: "Steam", rating: .works, publisher: "Valve"),
+                      .fixture(id: "gog", name: "GOG Galaxy", rating: .works),
+                      .fixture(id: "winrar", name: "WinRAR", category: .office, rating: .perfect)],
+            filesDirectory: URL(fileURLWithPath: "/tmp/RecipeFiles"))
+        #expect(catalog.platforms(matching: "").map(\.id) == ["gog", "steam", "ubisoft", "epic"])
+        #expect(catalog.platforms(matching: "VALVE").map(\.id) == ["steam"])
+        #expect(catalog.platforms(matching: "winrar").isEmpty)
+    }
+
     @Test func searchMatchesNameSummaryPublisherAndFoldsTurkish() {
         func names(_ query: String) -> [String] {
             let sections = Self.sample.sections(matching: query, category: nil)

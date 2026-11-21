@@ -2,14 +2,27 @@ import Foundation
 
 /// Tarifin uyumluluk notu.
 public enum RecipeRating: String, Codable, Hashable, Sendable {
-    case perfect, works, partial, broken
+    /// `opens`: kurulup giriş ekranına kadar açıldığı görüldü; giriş ve oyunlar henüz denenmedi.
+    case perfect, works, partial, opens, broken
 
     public var label: String {
         switch self {
         case .perfect: "Sorunsuz"
         case .works: "Çalışıyor"
         case .partial: "Kısmen çalışıyor"
+        case .opens: "Açılıyor"
         case .broken: "Şimdilik çalışmıyor"
+        }
+    }
+
+    /// Listede sıralama: iyi çalışan önce.
+    public var rank: Int {
+        switch self {
+        case .perfect: 0
+        case .works: 1
+        case .partial: 2
+        case .opens: 3
+        case .broken: 4
         }
     }
 }

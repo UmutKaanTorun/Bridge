@@ -46,6 +46,17 @@ public struct Downloader: Sendable {
 
     private func fetch(_ source: URL, to destination: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
         let box = ObservationBox()
+        // Kurulum durdurulunca (Swift görevi iptal) indirme de durur.
+        try await withTaskCancellationHandler {
+            try await download(source, to: destination, box: box, progress: progress)
+        } onCancel: {
+            box.cancel()
+        }
+        try Task.checkCancellation()
+    }
+
+    private func download(_ source: URL, to destination: URL, box: ObservationBox,
+                          progress: @escaping @Sendable (Double) -> Void) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
             let task = URLSession.shared.downloadTask(with: source) { temporary, response, error in
                 box.invalidate()
@@ -70,7 +81,7 @@ public struct Downloader: Sendable {
                     continuation.resume(throwing: error)
                 }
             }
-            box.set(task.progress.observe(\.fractionCompleted) { value, _ in progress(value.fractionCompleted) })
+            box.set(task.progress.observe(\.fractionCompleted) { value, _ in progress(value.fractionCompleted) }, task: task)
             task.resume()
         }
     }
@@ -98,12 +109,29 @@ public struct Downloader: Sendable {
     }
 }
 
-/// İlerleme gözlemcisini indirme bitene kadar canlı tutar.
+/// İlerleme gözlemcisini indirme bitene kadar canlı tutar; iptalde indirmeyi durdurur.
 private final class ObservationBox: @unchecked Sendable {
     private let lock = NSLock()
     private var observation: NSKeyValueObservation?
+    private var task: URLSessionDownloadTask?
+    private var cancelled = false
 
-    func set(_ observation: NSKeyValueObservation) { lock.withLock { self.observation = observation } }
+    func set(_ observation: NSKeyValueObservation, task: URLSessionDownloadTask) {
+        let cancelNow = lock.withLock {
+            self.observation = observation
+            self.task = task
+            return cancelled
+        }
+        if cancelNow { task.cancel() }
+    }
+
+    func cancel() {
+        let task = lock.withLock {
+            cancelled = true
+            return self.task
+        }
+        task?.cancel()
+    }
 
     func invalidate() {
         lock.withLock {

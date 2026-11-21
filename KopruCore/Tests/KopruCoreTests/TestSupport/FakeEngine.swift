@@ -4,7 +4,8 @@ import Foundation
 extension TempDir {
     /// bin/wine ve bin/wineserver yerine çağrıları kayit.txt'ye yazan sahte betikler.
     /// Ortam değişkenleri: KAYIT (kayıt dosyası), CIKIS (çıkış kodu), UYKU (saniye),
-    /// HATALI (argümanlarda bu metin geçerse 7 ile çıkar).
+    /// HATALI (argümanlarda bu metin geçerse 7 ile çıkar), KURULAN (…Setup.exe çalışınca bottle'da
+    /// oluşturulan göreli dosya; kurulumun programı diske yazdığını taklit eder).
     func fakeEngine() throws -> Engine {
         let script = """
         #!/bin/sh
@@ -13,6 +14,7 @@ extension TempDir {
         if [ -n "${KOPRU_APP_NAME+x}" ]; then printf 'KOPRU_APP_NAME=%s\\n' "$KOPRU_APP_NAME" >> "$KAYIT"; fi
         echo "sahte cikti"
         if [ -n "$HATALI" ]; then case "$*" in *"$HATALI"*) exit 7 ;; esac; fi
+        if [ -n "$KURULAN" ]; then case "$*" in *Setup.exe*) mkdir -p "$(dirname "$WINEPREFIX/$KURULAN")"; : > "$WINEPREFIX/$KURULAN" ;; esac; fi
         if [ -n "$UYKU" ]; then sleep "$UYKU"; fi
         exit "${CIKIS:-0}"
         """

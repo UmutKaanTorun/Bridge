@@ -16,11 +16,14 @@ public enum InstallStep: String, CaseIterable, Hashable, Sendable {
 public enum InstallError: Error, Equatable, LocalizedError {
     case prefixInitFailed(exitCode: Int32)
     case installerFailed(exitCode: Int32)
+    /// Kurulum programı hatasız bitti ama tarifin `detect` dosyaları yok.
+    case programMissing(String)
 
     public var errorDescription: String? {
         switch self {
         case let .prefixInitFailed(code): "Windows ortamı hazırlanamadı (wineboot çıkış kodu \(code))."
         case let .installerFailed(code): "Kurulum programı hata ile bitti (çıkış kodu \(code))."
+        case let .programMissing(name): "Kurulum bitti ama \(name) bottle'da bulunamadı."
         }
     }
 }

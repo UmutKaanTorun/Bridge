@@ -4,7 +4,9 @@ import Testing
 
 struct RecipeInstallerTests {
     private func installer(_ td: TempDir, _ extra: [String: String] = [:]) throws -> RecipeInstaller {
-        let runner = WineRunner(engine: try td.fakeEngine(), paths: td.paths, baseEnvironment: td.environment(extra))
+        let defaults = ["KURULAN": "drive_c/Program Files (x86)/Steam/steam.exe"]
+        let runner = WineRunner(engine: try td.fakeEngine(), paths: td.paths,
+                                baseEnvironment: td.environment(defaults.merging(extra) { _, new in new }))
         let store = BottleStore(paths: td.paths)
         let catalog = RecipeCatalog(recipes: [], filesDirectory: td.url.appendingPathComponent("RecipeFiles"))
         return RecipeInstaller(factory: BottleFactory(store: store, runner: runner),
@@ -67,6 +69,40 @@ struct RecipeInstallerTests {
             #expect(failure.bottle != nil)
             #expect(failure.underlying as? InstallError == .installerFailed(exitCode: 7))
             #expect(failure.localizedDescription == "Kurulum programı hata ile bitti (çıkış kodu 7).")
+        }
+    }
+
+    @Test func cancellingStopsInstallerAndKillsWineserver() async throws {
+        let td = try TempDir()
+        let installer = try installer(td, ["UYKU": "2"])
+        let recipe = try recipe(td)
+        let started = Collected<InstallEvent>()
+        let task = Task { try await installer.install(recipe, bottleName: "Steam") { started.add($0) } }
+        // wineboot da 2 sn uyur; kurulum programı başlayana kadar bekle, sonra durdur.
+        while !started.all.contains(.started(.installing)) { try await Task.sleep(for: .milliseconds(50)) }
+        task.cancel()
+        do {
+            _ = try await task.value
+            Issue.record("Hata bekleniyordu")
+        } catch let failure as InstallFailure {
+            #expect(failure.step == .installing)
+            #expect(failure.bottle != nil)
+            #expect(failure.underlying is CancellationError)
+        }
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(td.recordedLines().contains("wineserver -k"))
+        #expect(!started.all.contains(.started(.configuring)))
+    }
+
+    @Test func installerThatWritesNothingFails() async throws {
+        let td = try TempDir()
+        do {
+            _ = try await installer(td, ["KURULAN": ""]).install(try recipe(td), bottleName: "Steam") { _ in }
+            Issue.record("Hata bekleniyordu")
+        } catch let failure as InstallFailure {
+            #expect(failure.step == .installing)
+            #expect(failure.bottle != nil)
+            #expect(failure.underlying as? InstallError == .programMissing("Steam"))
         }
     }
 

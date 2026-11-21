@@ -41,6 +41,16 @@ public struct BottleStore: Sendable {
         return trimmed
     }
 
+    /// `base` boşta ise kendisi, değilse "base 2", "base 3"…: tek tıkla kurulumda bottle adı sorulmaz.
+    public func availableName(_ base: String) throws -> String {
+        let trimmed = base.trimmingCharacters(in: .whitespacesAndNewlines)
+        let taken = Set(try list().map { $0.info.name.lowercased() })
+        guard taken.contains(trimmed.lowercased()) else { return trimmed }
+        var number = 2
+        while taken.contains("\(trimmed) \(number)".lowercased()) { number += 1 }
+        return "\(trimmed) \(number)"
+    }
+
     /// Klasörü ve kopru.json'u oluşturur. Windows ortamını (wineboot) kurmaz.
     public func makeBottle(name: String, settings: BottleSettings, recipeId: String?, now: Date = Date()) throws -> Bottle {
         let name = try validateNewName(name)

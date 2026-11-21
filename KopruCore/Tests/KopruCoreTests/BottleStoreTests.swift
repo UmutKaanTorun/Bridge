@@ -30,6 +30,16 @@ struct BottleStoreTests {
         #expect(throws: BottleStoreError.nameTaken("steam")) { try store.makeBottle(name: "steam", settings: .default, recipeId: nil) }
     }
 
+    @Test func availableNameNumbersTakenNames() throws {
+        let td = try TempDir()
+        let store = BottleStore(paths: td.paths)
+        #expect(try store.availableName("Steam") == "Steam")
+        _ = try store.makeBottle(name: "steam", settings: .default, recipeId: nil)
+        _ = try store.makeBottle(name: "Steam 2", settings: .default, recipeId: nil)
+        #expect(try store.availableName("Steam") == "Steam 3")
+        #expect(try store.availableName("GOG Galaxy") == "GOG Galaxy")
+    }
+
     @Test func differentNamesWithSameFolderGetNumbered() throws {
         let td = try TempDir()
         let store = BottleStore(paths: td.paths)
