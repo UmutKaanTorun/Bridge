@@ -99,18 +99,27 @@ public enum RecipeAction: Hashable, Sendable {
     case registry(key: String, name: String, value: String)
     /// Steam'in steamwebhelper.exe dosyasını Köprü'nün aracısıyla değiştirir.
     case steamWebHelperProxy
+    /// Bottle'daki bütün Windows programlarını kapatır (`wineserver -k`). Kurulum programı istemciyi
+    /// tarifin argümanları olmadan kendisi açıyorsa (Battle.net) afterInstall'da o örneği kapatmak için.
+    case stopPrograms
+    /// Bottle'daki JSON dosyasının (bottle'a göre göreli) üst düzey anahtarlarına değer yazar, ötekileri korur;
+    /// dosya yoksa oluşturur. Ör. GOG Galaxy'nin config.json'ındaki Chromium bayrakları.
+    case jsonValues(file: String, values: [String: JSONValue])
+    /// Bottle'daki (bottle'a göre göreli) yardımcı programı tarif dosyalarındaki aynı adlı aracıyla değiştirir;
+    /// gerçeği `<ad>_gercek.exe` olur (`HelperProxy`). Ör. Social Club'ın SocialClubHelper.exe'sine `--in-process-gpu`.
+    case helperProxy(file: String)
 
     /// Yalnızca dosyalara dokunan, Wine çalıştırmayan eylemler; bottle çalışırken sık sık tekrarlanabilir.
     public var isFileAction: Bool {
         switch self {
-        case .registry: false
-        case .steamWebHelperProxy: true
+        case .registry, .stopPrograms: false
+        case .steamWebHelperProxy, .jsonValues, .helperProxy: true
         }
     }
 }
 
 extension RecipeAction: Codable {
-    private enum CodingKeys: String, CodingKey { case action, key, name, value }
+    private enum CodingKeys: String, CodingKey { case action, key, name, value, file, values }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -121,6 +130,13 @@ extension RecipeAction: Codable {
                              value: try c.decode(String.self, forKey: .value))
         case "steamWebHelperProxy":
             self = .steamWebHelperProxy
+        case "stopPrograms":
+            self = .stopPrograms
+        case "jsonValues":
+            self = .jsonValues(file: try c.decode(String.self, forKey: .file),
+                               values: try c.decode([String: JSONValue].self, forKey: .values))
+        case "helperProxy":
+            self = .helperProxy(file: try c.decode(String.self, forKey: .file))
         case let other:
             throw DecodingError.dataCorruptedError(forKey: .action, in: c, debugDescription: "Bilinmeyen tarif eylemi: \(other)")
         }
@@ -136,6 +152,15 @@ extension RecipeAction: Codable {
             try c.encode(value, forKey: .value)
         case .steamWebHelperProxy:
             try c.encode("steamWebHelperProxy", forKey: .action)
+        case .stopPrograms:
+            try c.encode("stopPrograms", forKey: .action)
+        case let .jsonValues(file, values):
+            try c.encode("jsonValues", forKey: .action)
+            try c.encode(file, forKey: .file)
+            try c.encode(values, forKey: .values)
+        case let .helperProxy(file):
+            try c.encode("helperProxy", forKey: .action)
+            try c.encode(file, forKey: .file)
         }
     }
 }

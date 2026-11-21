@@ -71,11 +71,18 @@ public struct BottleSettings: Codable, Hashable, Sendable {
     public var virtualDesktop: VirtualDesktop
     /// Metal HUD (kare hızı göstergesi).
     public var fpsHud: Bool
+    /// DXMT yerine Wine'ın kendi Direct3D'siyle (wined3d) açılacak programların exe adları (ör. "Launcher.exe").
+    /// Bottle'daki öteki programlar DXMT'de kalır. Motor bunu `Engine.wined3dProgramsVariable` ile alır;
+    /// wined3d'nin OpenGL kullanması için tarif ayrıca `AppDefaults\<exe>\Direct3D\renderer=gl` yazar.
+    /// Eski kopru.json dosyalarında yoktur.
+    public var wined3dPrograms: [String]?
 
-    public init(msync: Bool = true, virtualDesktop: VirtualDesktop = .off, fpsHud: Bool = false) {
+    public init(msync: Bool = true, virtualDesktop: VirtualDesktop = .off, fpsHud: Bool = false,
+                wined3dPrograms: [String]? = nil) {
         self.msync = msync
         self.virtualDesktop = virtualDesktop
         self.fpsHud = fpsHud
+        self.wined3dPrograms = wined3dPrograms
     }
 
     public static let `default` = BottleSettings()

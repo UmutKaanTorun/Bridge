@@ -111,6 +111,13 @@ struct PlatformTrialTests {
         let desktop = bottle.info.settings.virtualDesktop.size(visibleScreen: PixelSize(width: 1470, height: 919))
         let start = Date()
         let clockStart = ContinuousClock.now
+        // AppModel.start ile aynı: whileRunning eylemleri Wine çalıştığı sürece yeniden uygulanır.
+        let guardTask = Task {
+            await actions.keepApplying(recipe.whileRunning ?? [], recipe: recipe, bottle: bottle, while: {
+                runner.isRunning(bottle) || WineServerStatus.isRunning(prefix: bottle.url)
+            })
+        }
+        defer { guardTask.cancel() }
         let launch = Task { try await runner.run(target, in: bottle, desktopSize: desktop, appName: recipe.launch.name) }
         journal.write(recipe.id, "AÇILIYOR \(target)")
         var shot = 0

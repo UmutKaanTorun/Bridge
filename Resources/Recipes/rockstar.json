@@ -5,14 +5,24 @@
   "publisher": "Rockstar Games",
   "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
-  "rating": "broken",
-  "verdict": "Kuruluyor ama açılışta “failed to initialize” hatası veriyor (grafik katmanında eksik bir D3D11 işlevi).",
+  "rating": "opens",
+  "verdict": "Kurulum ve giriş ekranı çalışıyor (arayüz İngilizce). Giriş yapıp oyun indirmek henüz denenmedi.",
   "testedOn": {
     "date": "2026-11-21",
     "hardware": "Apple M3",
     "macOS": "26.6"
   },
   "downloadNote": "110 MB kurulum dosyası; diskte yaklaşık 100 MB",
+  "highlights": [
+    {
+      "title": "Grafik düzeltmesi",
+      "detail": "Launcher Wine'ın kendi Direct3D'siyle açılır, oyunlar DXMT'de kalır"
+    },
+    {
+      "title": "Tarayıcı çizimi düzeltmesi",
+      "detail": "Social Club giriş penceresi boş kalmaz"
+    }
+  ],
   "bottle": {
     "defaultName": "Rockstar Games Launcher",
     "settings": {
@@ -20,7 +30,10 @@
       "virtualDesktop": {
         "mode": "auto"
       },
-      "fpsHud": false
+      "fpsHud": false,
+      "wined3dPrograms": [
+        "Launcher.exe"
+      ]
     }
   },
   "installer": {
@@ -28,11 +41,30 @@
     "sha256": null,
     "fileName": "Rockstar-Games-Launcher.exe",
     "arguments": [
-      "/quiet"
+      "/s",
+      "/f"
     ]
   },
-  "afterInstall": [],
-  "beforeLaunch": [],
+  "afterInstall": [
+    {
+      "action": "registry",
+      "key": "HKCU\\Software\\Wine\\AppDefaults\\Launcher.exe\\Direct3D",
+      "name": "renderer",
+      "value": "gl"
+    }
+  ],
+  "beforeLaunch": [
+    {
+      "action": "helperProxy",
+      "file": "drive_c/Program Files/Rockstar Games/Social Club/SocialClubHelper.exe"
+    }
+  ],
+  "whileRunning": [
+    {
+      "action": "helperProxy",
+      "file": "drive_c/Program Files/Rockstar Games/Social Club/SocialClubHelper.exe"
+    }
+  ],
   "launch": {
     "name": "Rockstar Games Launcher",
     "windowsPath": "C:\\Program Files\\Rockstar Games\\Launcher\\Launcher.exe",

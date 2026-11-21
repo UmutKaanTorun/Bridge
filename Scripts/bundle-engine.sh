@@ -12,6 +12,12 @@ if [ ! -x "$SRC/bin/wine" ]; then
   echo "error: Wine motoru bulunamadı: $SRC"
   exit 1
 fi
+if [ ! -f "$SRC/orijinal-grafik/x86_64-windows/d3d11.dll" ]; then
+  echo "error: Motorda orijinal-grafik/ yok; program başına wined3d (ör. Rockstar Launcher) çalışmaz: $SRC"
+  exit 1
+fi
 mkdir -p "$DST"
-rsync -a --delete --exclude 'include/' --exclude 'orijinal-grafik/' "$SRC/" "$DST/"
+# orijinal-grafik/ (Wine'ın kendi d3d11/dxgi/d3d10core'u, 3 MB) pakette kalır: ntdll yaması bottle
+# ayarındaki programlar için onu DLL yolunun başına koyar (Tools/motor-yamalari/ntdll-program-basina-wined3d.patch).
+rsync -a --delete --exclude 'include/' "$SRC/" "$DST/"
 echo "Motor kopyalandı: $DST"

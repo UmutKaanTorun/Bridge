@@ -5,14 +5,24 @@
   "publisher": "Blizzard",
   "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
-  "rating": "broken",
-  "verdict": "Kuruluyor ama giriş penceresi boş kalıyor ve tarayıcı bileşeni çöküyor.",
+  "rating": "opens",
+  "verdict": "Kurulum ve giriş ekranı çalışıyor (arayüz İngilizce). Giriş yapıp oyun indirmek henüz denenmedi.",
   "testedOn": {
     "date": "2026-11-21",
     "hardware": "Apple M3",
     "macOS": "26.6"
   },
   "downloadNote": "5 MB kurulum dosyası; kurulumda yaklaşık 800 MB indirilir",
+  "highlights": [
+    {
+      "title": "Tarayıcı çizimi düzeltmesi",
+      "detail": "Giriş penceresi boş kalmaz"
+    },
+    {
+      "title": "Tarayıcı çökmesi düzeltmesi",
+      "detail": "Giriş sayfası açılırken program hata vermez"
+    }
+  ],
   "bottle": {
     "defaultName": "Battle.net",
     "settings": {
@@ -32,12 +42,19 @@
       "--installpath=C:\\Program Files (x86)\\Battle.net"
     ]
   },
-  "afterInstall": [],
+  "afterInstall": [
+    {
+      "action": "stopPrograms"
+    }
+  ],
   "beforeLaunch": [],
   "launch": {
     "name": "Battle.net",
-    "windowsPath": "C:\\Program Files (x86)\\Battle.net\\Battle.net Launcher.exe",
-    "arguments": []
+    "windowsPath": "C:\\Program Files (x86)\\Battle.net\\Battle.net.exe",
+    "arguments": [
+      "--in-process-gpu",
+      "--js-flags=--no-freeze-flags-after-init"
+    ]
   },
   "detect": [
     "drive_c/Program Files (x86)/Battle.net/Battle.net Launcher.exe"

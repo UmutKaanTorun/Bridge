@@ -36,5 +36,20 @@ struct BottleSettingsTests {
 
     @Test func defaultSettings() {
         #expect(BottleSettings.default == BottleSettings(msync: true, virtualDesktop: .off, fpsHud: false))
+        #expect(BottleSettings.default.wined3dPrograms == nil)
+    }
+
+    @Test func wined3dProgramsRoundTrip() throws {
+        let settings = BottleSettings(msync: true, virtualDesktop: .auto, fpsHud: false, wined3dPrograms: ["Launcher.exe"])
+        let data = try JSONEncoder().encode(settings)
+        #expect(try JSONDecoder().decode(BottleSettings.self, from: data) == settings)
+    }
+
+    @Test func settingsWithoutWined3dProgramsStillDecode() throws {
+        // Eski kopru.json dosyalarında bu alan yok.
+        let json = #"{"msync":true,"virtualDesktop":{"mode":"off"},"fpsHud":false}"#
+        let settings = try JSONDecoder().decode(BottleSettings.self, from: Data(json.utf8))
+        #expect(settings == .default)
+        #expect(settings.wined3dPrograms == nil)
     }
 }

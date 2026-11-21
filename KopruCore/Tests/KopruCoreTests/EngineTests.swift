@@ -70,4 +70,21 @@ struct EngineTests {
         #expect(env["MTL_HUD_ENABLED"] == "1")
         #expect(env["WINEDEBUG"] == "+loaddll")
     }
+
+    @Test func wined3dProgramsBecomeEngineVariable() {
+        let engine = Engine(root: URL(fileURLWithPath: "/Motor", isDirectory: true))
+        let settings = BottleSettings(wined3dPrograms: ["Launcher.exe", " LauncherPatcher.exe ", "", "a,b.exe"])
+        let env = engine.environment(prefix: URL(fileURLWithPath: "/B"), settings: settings, base: [:])
+        // Virgül motorda ayırıcı; virgüllü ya da boş adlar atlanır.
+        #expect(env[Engine.wined3dProgramsVariable] == "Launcher.exe,LauncherPatcher.exe")
+    }
+
+    @Test func noWined3dProgramsClearsEngineVariable() {
+        let engine = Engine(root: URL(fileURLWithPath: "/Motor", isDirectory: true))
+        let base = [Engine.wined3dProgramsVariable: "Launcher.exe"]
+        for settings in [BottleSettings(), BottleSettings(wined3dPrograms: []), BottleSettings(wined3dPrograms: [" "])] {
+            let env = engine.environment(prefix: URL(fileURLWithPath: "/B"), settings: settings, base: base)
+            #expect(env[Engine.wined3dProgramsVariable] == nil)
+        }
+    }
 }

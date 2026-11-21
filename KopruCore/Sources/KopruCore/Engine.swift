@@ -36,6 +36,11 @@ public struct Engine: Sendable, Equatable {
     /// ($TMPDIR/winetemp-…/<ad>, CrossOver Hack 22144). Yama: Tools/motor-yamalari/ntdll-dock-adi.patch
     public static let appNameVariable = "KOPRU_APP_NAME"
 
+    /// Virgülle ayrılmış exe adları. Motor (ntdll, Köprü yaması) ana programı bunlardan biri olan süreçte
+    /// `orijinal-grafik/` klasörünü (Wine'ın d3d11, dxgi, d3d10core'u) DLL yolunun başına koyar; o program
+    /// DXMT yerine wined3d ile çizer. Yama: Tools/motor-yamalari/ntdll-program-basina-wined3d.patch
+    public static let wined3dProgramsVariable = "KOPRU_WINED3D_EXE"
+
     public static func isValid(_ root: URL) -> Bool {
         FileManager.default.isExecutableFile(atPath: root.appendingPathComponent("bin/wine").path)
     }
@@ -73,6 +78,10 @@ public struct Engine: Sendable, Equatable {
         env["MVK_CONFIG_LOG_LEVEL"] = "0"
         env["WINEDEBUG"] = base["WINEDEBUG"] ?? "-all"
         env["MTL_HUD_ENABLED"] = settings.fpsHud ? "1" : nil
+        let wined3d = (settings.wined3dPrograms ?? [])
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.contains(",") }
+        env[Self.wined3dProgramsVariable] = wined3d.isEmpty ? nil : wined3d.joined(separator: ",")
         return env
     }
 }

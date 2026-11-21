@@ -5,14 +5,20 @@
   "publisher": "GOG",
   "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
-  "rating": "broken",
-  "verdict": "Kuruluyor ama giriş penceresi açılırken program kapanıyor.",
+  "rating": "opens",
+  "verdict": "Kurulum ve giriş ekranı çalışıyor (arayüz İngilizce). Giriş yapıp oyun indirmek henüz denenmedi.",
   "testedOn": {
     "date": "2026-11-21",
     "hardware": "Apple M3",
     "macOS": "26.6"
   },
   "downloadNote": "340 MB kurulum dosyası; diskte yaklaşık 370 MB",
+  "highlights": [
+    {
+      "title": "Tarayıcı çökmesi düzeltmesi",
+      "detail": "Giriş penceresi açılırken program kapanmaz"
+    }
+  ],
   "bottle": {
     "defaultName": "GOG Galaxy",
     "settings": {
@@ -35,7 +41,17 @@
     ]
   },
   "afterInstall": [],
-  "beforeLaunch": [],
+  "beforeLaunch": [
+    {
+      "action": "jsonValues",
+      "file": "drive_c/ProgramData/GOG.com/Galaxy/config.json",
+      "values": {
+        "chromiumClientAppArguments": {
+          "--disable-gpu": ""
+        }
+      }
+    }
+  ],
   "launch": {
     "name": "GOG Galaxy",
     "windowsPath": "C:\\Program Files\\GOG Galaxy\\GalaxyClient.exe",

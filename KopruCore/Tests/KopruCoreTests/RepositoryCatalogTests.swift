@@ -58,4 +58,34 @@ struct RepositoryCatalogTests {
             #expect(!recipe.detect.isEmpty, "\(recipe.id): detect boş; başarısız kurulum Kurulu görünür")
         }
     }
+
+    /// Motorun wined3d'si varsayılan olarak Vulkan'ı (MoltenVK) seçer; orada D3D 10_0 yok. wined3d'ye
+    /// alınan her program kurulumdan sonra OpenGL'e ayarlanmalı.
+    @Test func wined3dProgramsAreSetToOpenGL() throws {
+        let catalog = try Self.load()
+        for recipe in catalog.recipes {
+            for program in recipe.bottle.settings.wined3dPrograms ?? [] {
+                let action = RecipeAction.registry(key: "HKCU\\Software\\Wine\\AppDefaults\\\(program)\\Direct3D",
+                                                   name: "renderer", value: "gl")
+                #expect(recipe.afterInstall.contains(action), "\(recipe.id): \(program) için renderer=gl yok")
+            }
+        }
+        #expect(catalog.recipe(id: "rockstar")?.bottle.settings.wined3dPrograms == ["Launcher.exe"])
+    }
+
+    /// Her `helperProxy` eyleminin aracısı tarif dosyalarında, yardımcıyla aynı adla ve onu tanıtan işaretle var
+    /// (Tools/cef-araci/derle.sh).
+    @Test func helperProxiesAreBuilt() throws {
+        let catalog = try Self.load()
+        var count = 0
+        for recipe in catalog.recipes {
+            for case let .helperProxy(file) in recipe.afterInstall + recipe.beforeLaunch + (recipe.whileRunning ?? []) {
+                let name = URL(fileURLWithPath: file).lastPathComponent
+                let proxy = catalog.filesDirectory(for: recipe).appendingPathComponent(name)
+                #expect(HelperProxy.isProxy(proxy, helperNamed: name), "\(recipe.id): \(name) aracısı yok ya da eski")
+                count += 1
+            }
+        }
+        #expect(count > 0)
+    }
 }

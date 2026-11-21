@@ -1,0 +1,61 @@
+Köprü yaması: grafik altyapısını program başına seçer (KOPRU_WINED3D_EXE → orijinal-grafik/ DLL yolunun başına).
+CrossOver 26.3.0 kaynağına ntdll-dock-adi.patch'ten sonra uygulanır: patch -p1 < ntdll-program-basina-wined3d.patch
+
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -382,6 +382,47 @@
+     dll_paths = new_dll_paths;
+     if (path_len > dll_path_maxlen)
+         dll_path_maxlen = path_len;
++}
++
++/* Köprü yaması: grafik altyapısını program başına seçer. Köprü, bottle ayarındaki programları
++ * KOPRU_WINED3D_EXE'ye virgülle ayırarak yazar (ör. "Launcher.exe,LauncherPatcher.exe").
++ * Ana program bunlardan biriyse motorun orijinal-grafik/ klasörü (Wine'ın kendi d3d11, dxgi ve
++ * d3d10core'u; çizim wined3d ile) DLL arama yolunun başına konur, CrossOver'ın kendi program
++ * başına ayarlarında kullandığı prepend_dll_path() ile. Öteki programlar DXMT'de kalır. */
++static void kopru_wined3d_for_app( const WCHAR *app_name )
++{
++    const char *list = getenv( "KOPRU_WINED3D_EXE" );
++    const char *item, *end;
++    char *dir, *real;
++    const WCHAR *p;
++    WCHAR name[MAX_PATH];
++    DWORD len;
++    BOOL match = FALSE;
++
++    if (!list || !*list || !app_name) return;
++    if ((p = wcsrchr( app_name, '\\' ))) app_name = p + 1;
++    for (item = list; *item && !match; item = *end ? end + 1 : end)
++    {
++        while (*item == ' ') item++;
++        if (!(end = strchr( item, ',' ))) end = item + strlen( item );
++        len = end - item;
++        while (len && item[len - 1] == ' ') len--;
++        if (!len || len >= MAX_PATH) continue;
++        len = ntdll_umbstowcs( item, len, name, MAX_PATH - 1 );
++        name[len] = 0;
++        match = !wcsicmp( name, app_name );
++    }
++    if (!match) return;
++    if (asprintf( &dir, "%s/../../orijinal-grafik", dll_dir ) == -1) return;
++    real = realpath( dir, NULL );
++    free( dir );
++    if (!real)
++    {
++        WARN( "Kopru: orijinal-grafik bulunamadi, %s DXMT ile acilir\n", debugstr_w(app_name) );
++        return;
++    }
++    TRACE( "Kopru: %s wined3d ile acilir (%s)\n", debugstr_w(app_name), real );
++    prepend_dll_path( real ); /* dll_paths'te kalır, serbest bırakılmaz */
+ }
+ 
+ static void set_dll_path(void)
+@@ -2243,6 +2284,7 @@
+     init_startup_info();
+     *(ULONG_PTR *)&peb->CloudFileFlags = get_image_address();
+     set_load_order_app_name( main_wargv[0] );
++    kopru_wined3d_for_app( main_wargv[0] ); /* Köprü yaması */
+     init_thread_stack( teb, 0, 0, 0 );
+     NtCreateKeyedEvent( &keyed_event, GENERIC_READ | GENERIC_WRITE, NULL, 0 );
+     load_ntdll();

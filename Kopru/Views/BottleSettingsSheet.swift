@@ -44,7 +44,12 @@ struct BottleSettingsSheet: View {
         case .auto: .auto
         case .fixed: .fixed(width: max(640, width), height: max(480, height))
         }
-        return BottleSettings(msync: msync, virtualDesktop: desktop, fpsHud: fpsHud)
+        // Pencerede gösterilmeyen ayarlar (ör. tarifin wined3d programları) olduğu gibi kalır.
+        var settings = bottle.info.settings
+        settings.msync = msync
+        settings.virtualDesktop = desktop
+        settings.fpsHud = fpsHud
+        return settings
     }
 
     var body: some View {

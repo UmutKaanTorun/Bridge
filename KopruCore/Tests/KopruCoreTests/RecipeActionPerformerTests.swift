@@ -31,6 +31,76 @@ struct RecipeActionPerformerTests {
         }
     }
 
+    /// Kurulum programının kendisi açtığı istemci (ör. Battle.net) tarifin bayraklarıyla değil, bayraksız açılır;
+    /// kurulumdan sonra kapatılmazsa "Aç" yeni süreç yerine o örneği öne getirir.
+    @Test func stopProgramsKillsWineserver() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        try await performer.perform([.stopPrograms], recipe: .fixture(), bottle: bottle)
+        #expect(td.recordedLines().first == "wineserver -k")
+        #expect(td.recordedLines().contains { $0.hasPrefix("WINEPREFIX=\(bottle.url.path) ") })
+    }
+
+    static let galaxyConfig = "drive_c/ProgramData/GOG.com/Galaxy/config.json"
+    static let disableGPU: [String: JSONValue] = ["chromiumClientAppArguments": .object(["--disable-gpu": .string("")])]
+
+    private func readJSON(_ url: URL) throws -> [String: Any] {
+        try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+    }
+
+    /// GOG Galaxy kendi config.json'ını yazar; tarif yalnız kendi anahtarını eklemeli, ötekilere dokunmamalı.
+    @Test func jsonValuesMergesIntoExistingFile() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        let config = try td.file("AppSupport/Bottles/Steam/\(Self.galaxyConfig)",
+                                 #"{ "clientInstanceId": "abc", "libraryPath": "C:\\Program Files\\GOG Galaxy\\Games", "chromiumClientAppArguments": "eski" }"#)
+        try await performer.perform([.jsonValues(file: Self.galaxyConfig, values: Self.disableGPU)], recipe: .fixture(), bottle: bottle)
+        let json = try readJSON(config)
+        #expect(json["clientInstanceId"] as? String == "abc")
+        #expect(json["libraryPath"] as? String == "C:\\Program Files\\GOG Galaxy\\Games")
+        #expect(json["chromiumClientAppArguments"] as? [String: String] == ["--disable-gpu": ""])
+    }
+
+    @Test func jsonValuesCreatesMissingFile() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        try await performer.perform([.jsonValues(file: Self.galaxyConfig, values: Self.disableGPU)], recipe: .fixture(), bottle: bottle)
+        let json = try readJSON(bottle.url.appendingPathComponent(Self.galaxyConfig))
+        #expect(json["chromiumClientAppArguments"] as? [String: String] == ["--disable-gpu": ""])
+    }
+
+    @Test func jsonValuesTreatsEmptyFileAsEmptyObject() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        let config = try td.file("AppSupport/Bottles/Steam/\(Self.galaxyConfig)", "  \n")
+        try await performer.perform([.jsonValues(file: Self.galaxyConfig, values: ["n": .number(3), "b": .bool(false)])],
+                                    recipe: .fixture(), bottle: bottle)
+        let json = try readJSON(config)
+        #expect(json["n"] as? Int == 3)
+        #expect(json["b"] as? Bool == false)
+    }
+
+    @Test func jsonValuesRejectsInvalidJSON() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        let config = try td.file("AppSupport/Bottles/Steam/\(Self.galaxyConfig)", "[1, 2]")
+        await #expect(throws: RecipeActionError.invalidJSONFile(config.path)) {
+            try await performer.perform([.jsonValues(file: Self.galaxyConfig, values: Self.disableGPU)], recipe: .fixture(), bottle: bottle)
+        }
+        #expect(try String(contentsOf: config, encoding: .utf8) == "[1, 2]")
+    }
+
+    /// Tarifler depodan da gelebilir; dosya eylemi bottle'ın dışına yazamamalı.
+    @Test(arguments: ["../disari.json", "/tmp/disari.json", "drive_c/../../disari.json", ""])
+    func jsonValuesRejectsPathsOutsideBottle(_ path: String) async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        await #expect(throws: RecipeActionError.unsafePath(path)) {
+            try await performer.perform([.jsonValues(file: path, values: Self.disableGPU)], recipe: .fixture(), bottle: bottle)
+        }
+        #expect(!FileManager.default.fileExists(atPath: td.url.appendingPathComponent("AppSupport/Bottles/disari.json").path))
+    }
+
     @Test func proxyActionUsesRecipeFiles() async throws {
         let td = try TempDir()
         let (performer, bottle) = try setUp(td)

@@ -42,9 +42,25 @@ struct RecipeTests {
     }
 
     @Test func actionRoundTrip() throws {
-        let actions: [RecipeAction] = [.registry(key: "HKCU\\X", name: "a", value: "b"), .steamWebHelperProxy]
+        let actions: [RecipeAction] = [.registry(key: "HKCU\\X", name: "a", value: "b"), .steamWebHelperProxy, .stopPrograms,
+                                       .jsonValues(file: "drive_c/a.json", values: ["k": .object(["--x": .string("")]), "n": .number(2),
+                                                                                    "b": .bool(true), "l": .array([.null])])]
         let data = try JSONEncoder().encode(actions)
         #expect(try JSONDecoder().decode([RecipeAction].self, from: data) == actions)
+    }
+
+    @Test func decodesStopPrograms() throws {
+        #expect(try JSONDecoder().decode(RecipeAction.self, from: Data(#"{"action":"stopPrograms"}"#.utf8)) == .stopPrograms)
+        // Wine çalıştırır; bottle çalışırken saniyede bir tekrarlanmamalı.
+        #expect(!RecipeAction.stopPrograms.isFileAction)
+    }
+
+    @Test func decodesJSONValues() throws {
+        let json = #"{"action":"jsonValues","file":"drive_c/ProgramData/GOG.com/Galaxy/config.json","values":{"chromiumClientAppArguments":{"--disable-gpu":""}}}"#
+        let action = try JSONDecoder().decode(RecipeAction.self, from: Data(json.utf8))
+        #expect(action == .jsonValues(file: "drive_c/ProgramData/GOG.com/Galaxy/config.json",
+                                      values: ["chromiumClientAppArguments": .object(["--disable-gpu": .string("")])]))
+        #expect(action.isFileAction)
     }
 
     @Test func ratingLabels() throws {
