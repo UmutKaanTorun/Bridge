@@ -6,7 +6,7 @@
   "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
   "rating": "opens",
-  "verdict": "Kurulum ve Türkçe giriş ekranı çalışıyor. Giriş yapıp oyun indirmek henüz denenmedi.",
+  "verdict": "Kurulum, Türkçe giriş, oyun indirme ve oyunlar çalışıyor (Among Us indirilip hesapla açıldı). Arkadaş listesi çalışmıyor.",
   "testedOn": {
     "date": "2026-11-21",
     "hardware": "Apple M3",
@@ -32,7 +32,26 @@
     ]
   },
   "afterInstall": [],
-  "beforeLaunch": [],
+  "beforeLaunch": [
+    {
+      "action": "helperProxy",
+      "file": "drive_c/Program Files (x86)/Epic Games/Epic Online Services/managedArtifacts/98bc04bc842e4906993fd6d6644ffb8d/EOSOverlayRenderer-Win64-Shipping.exe"
+    },
+    {
+      "action": "helperProxy",
+      "file": "drive_c/Program Files (x86)/Epic Games/Epic Online Services/managedArtifacts/98bc04bc842e4906993fd6d6644ffb8d/EOSOverlayRenderer-Win32-Shipping.exe"
+    }
+  ],
+  "whileRunning": [
+    {
+      "action": "helperProxy",
+      "file": "drive_c/Program Files (x86)/Epic Games/Epic Online Services/managedArtifacts/98bc04bc842e4906993fd6d6644ffb8d/EOSOverlayRenderer-Win64-Shipping.exe"
+    },
+    {
+      "action": "helperProxy",
+      "file": "drive_c/Program Files (x86)/Epic Games/Epic Online Services/managedArtifacts/98bc04bc842e4906993fd6d6644ffb8d/EOSOverlayRenderer-Win32-Shipping.exe"
+    }
+  ],
   "launch": {
     "name": "Epic Games Launcher",
     "windowsPath": "C:\\Program Files\\Epic Games\\Launcher\\Portal\\Binaries\\Win64\\EpicGamesLauncher.exe",

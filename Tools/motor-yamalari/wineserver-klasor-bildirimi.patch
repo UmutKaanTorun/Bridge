@@ -1,0 +1,200 @@
+Köprü yaması: inotify olmayan sistemlerde (macOS) Wine süreçlerinin wineserver üzerinden yaptığı dosya işlemleri
+(oluşturma, silme, ad değiştirme, yazılmış dosyanın kapanması) klasör izleyicilerine (ReadDirectoryChangesW) olay olarak iletilir.
+Epic Games Launcher'ın kurulum klasörü hazırlayıcısı bu bildirimle haberleşiyor; olay gelmeyince DP-06 hatası veriyordu.
+CrossOver 26.3.0 kaynağına uygulanır: patch -p1 < wineserver-klasor-bildirimi.patch
+
+--- a/server/change.c
++++ b/server/change.c
+@@ -318,6 +318,101 @@
+     }
+ }
+ 
++/* Köprü yaması: inotify olmayan sistemlerde (macOS) klasör değişikliği bildirimi.
++ * Wine klasör izleyicilerini (ReadDirectoryChangesW) yalnız inotify ile besliyor; macOS'ta hiçbir
++ * olay gelmiyordu. Epic Games Launcher kurulum klasörünü ayrı bir süreçle hazırlıyor ve iki süreç
++ * birbirinin yazdığı dosyayı bu bildirimle bekliyor; olay gelmeyince DP-06 hatası veriyordu.
++ * Burada Wine süreçlerinin wineserver üzerinden yaptığı oluşturma, silme, ad değiştirme ve
++ * yazmak için açılmış dosyanın kapanması olaya çevrilir (Wine dışındaki değişiklikler görülmez). */
++#ifndef HAVE_SYS_INOTIFY_H
++int kopru_dir_watched( void )
++{
++    return !list_empty( &change_list );
++}
++
++void kopru_dir_notify( const char *path, unsigned int action, int is_dir, unsigned int cookie )
++{
++    struct { dev_t dev; ino_t ino; size_t len; } parents[32];
++    unsigned int filter, saved_error;
++    char work[PATH_MAX];
++    struct stat st;
++    struct dir *dir;
++    int count = 0, i;
++    size_t len;
++
++    if (!path || list_empty( &change_list )) return;
++    if ((len = strlen( path )) >= sizeof(work) || path[0] != '/') return;
++
++    switch (action)
++    {
++    case FILE_ACTION_ADDED:
++        filter = (is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME : FILE_NOTIFY_CHANGE_FILE_NAME) | FILE_NOTIFY_CHANGE_CREATION;
++        break;
++    case FILE_ACTION_REMOVED:
++    case FILE_ACTION_RENAMED_OLD_NAME:
++    case FILE_ACTION_RENAMED_NEW_NAME:
++        filter = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME : FILE_NOTIFY_CHANGE_FILE_NAME;
++        break;
++    default:
++        filter = FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SIZE;
++        break;
++    }
++
++    /* üst klasörler, en yakından köke */
++    memcpy( work, path, len + 1 );
++    while (count < (int)(sizeof(parents) / sizeof(parents[0])))
++    {
++        char *slash = strrchr( work, '/' );
++        if (!slash) break;
++        if (slash == work) slash[1] = 0;
++        else *slash = 0;
++        if (stat( work, &st )) break;
++        parents[count].dev = st.st_dev;
++        parents[count].ino = st.st_ino;
++        parents[count].len = strlen( work );
++        count++;
++        if (!strcmp( work, "/" )) break;
++    }
++
++    saved_error = get_error();  /* get_unix_fd hata yazabilir; isteğin sonucunu bozmasın */
++    LIST_FOR_EACH_ENTRY( dir, &change_list, struct dir, entry )
++    {
++        struct stat dst;
++        int unix_fd;
++
++        if (!(dir->filter & filter)) continue;
++        if ((unix_fd = get_unix_fd( dir->fd )) == -1 || fstat( unix_fd, &dst )) continue;
++        for (i = 0; i < count; i++)
++        {
++            if (parents[i].dev != dst.st_dev || parents[i].ino != dst.st_ino) continue;
++            if (i == 0 || dir->subtree)
++            {
++                const char *relpath = path + parents[i].len + (parents[i].len > 1 ? 1 : 0);
++                if (dir->want_data)
++                {
++                    size_t rel_len = strlen( relpath );
++                    struct change_record *record = malloc( offsetof(struct change_record, event.name[rel_len]) );
++                    if (record)
++                    {
++                        record->cookie = cookie;
++                        record->event.action = action;
++                        memcpy( record->event.name, relpath, rel_len );
++                        record->event.len = rel_len;
++                        list_add_tail( &dir->change_records, &record->entry );
++                    }
++                }
++                fd_async_wake_up( dir->fd, ASYNC_TYPE_WAIT, STATUS_ALERTED );
++            }
++            break;
++        }
++    }
++    set_error( saved_error );
++}
++#else
++int kopru_dir_watched( void ) { return 0; }
++void kopru_dir_notify( const char *path, unsigned int action, int is_dir, unsigned int cookie ) {}
++#endif
++
+ static struct fd *dir_get_fd( struct object *obj )
+ {
+     struct dir *dir = (struct dir *)obj;
+--- a/server/fd.c
++++ b/server/fd.c
+@@ -1100,8 +1100,9 @@
+     struct stat st;
+     if (!stat( fd->unix_name, &st ) && st.st_dev == inode->device->dev && st.st_ino == inode->ino)
+     {
+-        if (S_ISDIR(st.st_mode)) rmdir( fd->unix_name );
+-        else unlink( fd->unix_name );
++        int removed = S_ISDIR(st.st_mode) ? !rmdir( fd->unix_name ) : !unlink( fd->unix_name );
++        if (removed)  /* Köprü yaması: klasör bildirimi */
++            kopru_dir_notify( fd->unix_name, FILE_ACTION_REMOVED, S_ISDIR(st.st_mode), 0 );
+     }
+ }
+ 
+@@ -1602,6 +1603,14 @@
+     free( fd->nt_name );
+     if (fd->inode)
+     {
++        /* Köprü yaması: yazmak için açılmış dosya kapanınca klasör bildirimi ("değişti") */
++        if (kopru_dir_watched() && fd->unix_name && fd->unix_fd != -1 &&
++            (fd->access & (FILE_WRITE_DATA | FILE_APPEND_DATA)))
++        {
++            struct stat st;
++            if (!fstat( fd->unix_fd, &st ) && S_ISREG( st.st_mode ))
++                kopru_dir_notify( fd->unix_name, FILE_ACTION_MODIFIED, 0, 0 );
++        }
+         inode_add_closed_fd( fd->inode, fd->closed );
+         release_object( fd->inode );
+     }
+@@ -1925,6 +1934,7 @@
+     int root_fd = -1;
+     int rw_mode;
+     char *path;
++    int kopru_created = 0;  /* Köprü yaması: bu çağrı dosyayı/klasörü yeni mi oluşturdu */
+ 
+     if (((options & FILE_DELETE_ON_CLOSE) && !(access & DELETE)) ||
+         ((options & FILE_DIRECTORY_FILE) && (flags & O_TRUNC)))
+@@ -1964,8 +1974,14 @@
+                 goto error;
+             }
+         }
++        else kopru_created = 1;  /* Köprü yaması */
+         flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
+     }
++    else if ((flags & O_CREAT) && kopru_dir_watched())  /* Köprü yaması: dosya önceden var mıydı */
++    {
++        struct stat existing;
++        kopru_created = lstat( name, &existing ) == -1 && errno == ENOENT;
++    }
+ 
+     if ((access & FILE_UNIX_WRITE_ACCESS) && !(options & FILE_DIRECTORY_FILE))
+     {
+@@ -2087,6 +2103,9 @@
+         break;
+     }
+ #endif
++
++    if (kopru_created && fd->unix_name)  /* Köprü yaması: klasör bildirimi */
++        kopru_dir_notify( fd->unix_name, FILE_ACTION_ADDED, S_ISDIR( *mode ), 0 );
+ 
+     if (root_fd != -1) fchdir( server_dir_fd ); /* go back to the server dir */
+     return fd;
+@@ -2950,6 +2969,16 @@
+     {
+         file_set_error();
+         goto failed;
++    }
++
++    if (kopru_dir_watched())  /* Köprü yaması: klasör bildirimi (eski ad → yeni ad) */
++    {
++        static unsigned int kopru_rename_cookie;
++        struct stat kst;
++        int is_dir = !fstat( fd->unix_fd, &kst ) && S_ISDIR( kst.st_mode );
++        kopru_rename_cookie++;
++        kopru_dir_notify( fd->unix_name, FILE_ACTION_RENAMED_OLD_NAME, is_dir, kopru_rename_cookie );
++        kopru_dir_notify( name, FILE_ACTION_RENAMED_NEW_NAME, is_dir, kopru_rename_cookie );
+     }
+ 
+     if (is_file_executable( fd->unix_name ) != is_file_executable( name ) && !fstat( fd->unix_fd, &st ))
+--- a/server/file.h
++++ b/server/file.h
+@@ -232,6 +232,9 @@
+ 
+ extern void do_change_notify( int unix_fd );
+ extern void sigio_callback(void);
++/* Köprü yaması: inotify olmayan sistemlerde Wine'ın kendi dosya işlemlerinden klasör bildirimi */
++extern int kopru_dir_watched( void );
++extern void kopru_dir_notify( const char *path, unsigned int action, int is_dir, unsigned int cookie );
+ extern struct object *create_dir_obj( struct fd *fd, unsigned int access, mode_t mode );
+ extern struct dir *get_dir_obj( struct process *process, obj_handle_t handle, unsigned int access );
+ 

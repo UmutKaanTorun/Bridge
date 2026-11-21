@@ -30,7 +30,7 @@ Umut: "CrossOver'daki gibi sadece platformlar olsun, tıkladığımızda indirip
 | Platform | Kurulum | Açılış | Etiket |
 |---|---|---|---|
 | Steam | ✓ (önceki tarif) | ✓ giriş, mağaza, oyun | Çalışıyor |
-| Epic Games Launcher | ✓ MSI `/qn`, 63 sn | ✓ Türkçe giriş ekranı | Açılıyor |
+| Epic Games Launcher | ✓ MSI `/qn`, 63 sn | ✓ Türkçe giriş ekranı; dördüncü turda Umut'un hesabıyla giriş, kitaplık, oyun indirme (Among Us, DP-06 geçici çözümüyle) ve oyun (DXMT, hesapla ana menü) | Açılıyor |
 | GOG Galaxy | ✓ Inno `/VERYSILENT`, 95 sn (taze denemede 58 sn) | ✓ giriş ekranı (ikinci tur: `config.json`'da `--disable-gpu`; ilk turda 1 sn sonra çöküyordu) | Açılıyor |
 | EA App | ✓ WiX Burn `/quiet`, 54 sn (üçüncü tur: motora Gecko + Mono; ilk iki turda "güncelleme denetimi"nde sonsuza dek bekliyordu, aşağıda) | ✓ giriş ekranı (`EADesktop.exe --in-process-gpu`; `EALauncher` bayrağı geçirmiyor, pencere boş kalıyordu) | Açılıyor |
 | Ubisoft Connect | ✓ NSIS `/S`, 51 sn | ✓ giriş ekranı, ilk açılıştaki kendini güncellemeden sonra da (ikinci tur: `--in-process-gpu`; ilk turda beyaz pencere) | Açılıyor |
@@ -100,6 +100,18 @@ Ortak neden: 26.3.0 motor paketinde `share/wine/gecko` ve `share/wine/mono` yok 
 - **Uçtan uca:** `PlatformTrialTests` (temiz kök, Köprü'nün kurulum kodu, geliştirme motoru): 18 sn bottle, 36 sn kurulum, `detect: true`; açılışta 520×867 giriş ekranı çizili, 120 sn açık kaldı. Bundan önceki iki tur bu turun ara adımları (bayraksız açılış: boş pencere; `EAX_DISABLE_SYMLINKS`: etkisiz).
 
 Kanıtlar (Burn günlükleri, Wine izi özeti): `~/WineBottles/kopru-platform/ea-kanit/`. Ekran görüntüleri o klasöre kopyalanınca siliniyor (Rockstar notundaki PNG silinmesiyle aynı; kaynağı bilinmiyor).
+
+### Epic — oyun indirme ve oynama (dördüncü tur, Umut'un gerçek bottle'ı, Köprü 0.1.1 motoru)
+
+- **Giriş ve kitaplık:** çalışıyor (Türkçe arayüz). Arkadaş/sohbet bileşeninin EOS girişi düşüyor: `LogDPoP: Failed to create persistent DPoP key (Status: 0x80090029)` → `GenerateDpop failed to parse public key`. Wine'ın `ncrypt`'inde kalıcı anahtar desteği yok (`NTE_NOT_SUPPORTED`); arkadaş listesi çalışmaz, oyunları etkilemedi.
+- **Oyun indirme — DP-06:** "Yükle" sessizce bir şey yapmıyordu (Epic günlüğünde `DirectoryPreparation: Aborting`, `DP-06`).
+  - Kök neden: Epic kurulum klasörünü ayrı bir süreçte hazırlıyor (`EpicGamesLauncher.exe -commandlet=prepareinstalldir`). İki süreç `C:\ProgramData\Epic\EpicGamesLauncher\com\` klasörüne dosya yazıp (`cpdpc.rx` istek, `cpdpc.tx` yanıt) birbirini `ReadDirectoryChangesW` ile bekliyor. Wine klasör değişikliği bildirimini yalnız Linux'ta (`inotify`) üretiyor (`server/change.c`); Mac'te hiç üretmiyor. Hazırlayıcı "Returning ready 1" deyip 50 sn sonra `DP-05` (`CommandletTimeout`), ana süreç `DP-06` veriyor.
+  - Geçici çözüm (elle denendi): hedef klasör (`C:\Program Files\Epic Games\<Oyun>`) önceden var olunca Epic "Directory already setup" deyip hazırlayıcıyı başlatmıyor; Among Us (1,15 GB) böyle indi ve kuruldu.
+  - **Kalıcı çözüm (Umut onayıyla, motor yaması):** [`Tools/motor-yamalari/wineserver-klasor-bildirimi.patch`](../../../Tools/motor-yamalari/wineserver-klasor-bildirimi.patch). inotify olmayan sistemlerde wineserver, Wine süreçlerinin kendi yaptığı oluşturma (`open_fd`: yeni dosya, `mkdir`), kapanırken silme (`unlink_closed_fd`), ad değiştirme (`set_fd_name`) ve yazmak için açılmış dosyanın kapanmasını (`fd_destroy`) izlenen klasörlere olay olarak iletiyor (`change.c: kopru_dir_notify`; izlenen klasörle üst klasörler aygıt+inode ile eşleşir, alt klasör izlemesi desteklenir; izleyen yoksa ek iş yok). Wine dışındaki değişiklikler görülmez. Test programı (Epic'in süzgeci, ayrı süreçte oluştur/yaz/ad değiştir/sil): yamasız 0 olay, yamalı 7 doğru olay. Epic'te klasör önceden açılmadan Fall Guys: "Start prepare" → "Returning result: ok" → "Process Result: ok", indirme başladı (~95 MB/sn).
+  - `--disable-gpu` (Epic'in kendi CEF'i) bu sorunla ilgisizdi; tarife eklenmedi.
+- **Oyun (Among Us, Unity, D3D11):** DXMT'de açılıyor (`d3d11`, `dxgi`, `winemetal` yüklü), tam ekran düzgün çiziliyor.
+  - İlk açılışta Epic hesap izni istiyor (`errors.com.epicgames.oauth.corrective_action_required`); izni oyun içi EOS katmanı (CEF, `EOSOverlayRenderer-Win64-Shipping.exe`) gösteriyor. Katmanın GPU süreci paylaşımlı dokuda takılıyor (`cef.log`: 260× `Unable to initialize SkSurface`, `d3d_image_backing … Already being accessed for write`) → sayfa çizilmiyor → oyun "Unable to get Epic Account ID".
+  - Düzeltme: `helperProxy` ile katman tarayıcısına `--disable-gpu` (`Tools/cef-araci`, 64 ve 32 bit aracı; `epic.json` `beforeLaunch` + `whileRunning`, yol `…\Epic Online Services\managedArtifacts\98bc04bc…\`). İzin sayfası çizildi; Umut izin verdi; oyun hesapla girdi ("login status LoggedIn"), ana menü ve ONLINE ekranı açık.
 
 ### Yeni tarif eylemleri (KopruCore)
 
