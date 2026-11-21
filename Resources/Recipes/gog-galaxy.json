@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "id": "gog-galaxy",
+  "name": "GOG Galaxy",
+  "publisher": "GOG",
+  "summary": "Oyun mağazası ve başlatıcısı",
+  "category": "game",
+  "rating": "broken",
+  "verdict": "Kuruluyor ama giriş penceresi açılırken program kapanıyor.",
+  "testedOn": {
+    "date": "2026-11-21",
+    "hardware": "Apple M3",
+    "macOS": "26.6"
+  },
+  "downloadNote": "340 MB kurulum dosyası; diskte yaklaşık 370 MB",
+  "bottle": {
+    "defaultName": "GOG Galaxy",
+    "settings": {
+      "msync": true,
+      "virtualDesktop": {
+        "mode": "auto"
+      },
+      "fpsHud": false
+    }
+  },
+  "installer": {
+    "url": "https://content-system.gog.com/open_link/download?path=/open/galaxy/client/setup_galaxy_2.1.6.29.exe",
+    "sha256": null,
+    "fileName": "setup_galaxy.exe",
+    "arguments": [
+      "/VERYSILENT",
+      "/SUPPRESSMSGBOXES",
+      "/NORESTART",
+      "/SP-"
+    ]
+  },
+  "afterInstall": [],
+  "beforeLaunch": [],
+  "launch": {
+    "name": "GOG Galaxy",
+    "windowsPath": "C:\\Program Files\\GOG Galaxy\\GalaxyClient.exe",
+    "arguments": [
+      "/runWithoutUpdating",
+      "/deelevated"
+    ]
+  },
+  "detect": [
+    "drive_c/Program Files/GOG Galaxy/GalaxyClient.exe"
+  ],
+  "hideShortcuts": []
+}

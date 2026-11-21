@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "battlenet",
+  "name": "Battle.net",
+  "publisher": "Blizzard",
+  "summary": "Oyun mağazası ve başlatıcısı",
+  "category": "game",
+  "rating": "broken",
+  "verdict": "Kuruluyor ama giriş penceresi boş kalıyor ve tarayıcı bileşeni çöküyor.",
+  "testedOn": {
+    "date": "2026-11-21",
+    "hardware": "Apple M3",
+    "macOS": "26.6"
+  },
+  "downloadNote": "5 MB kurulum dosyası; kurulumda yaklaşık 800 MB indirilir",
+  "bottle": {
+    "defaultName": "Battle.net",
+    "settings": {
+      "msync": true,
+      "virtualDesktop": {
+        "mode": "auto"
+      },
+      "fpsHud": false
+    }
+  },
+  "installer": {
+    "url": "https://www.battle.net/download/getInstallerForGame?os=win&version=LIVE&gameProgram=BATTLENET_APP",
+    "sha256": null,
+    "fileName": "Battle.net-Setup.exe",
+    "arguments": [
+      "--lang=trTR",
+      "--installpath=C:\\Program Files (x86)\\Battle.net"
+    ]
+  },
+  "afterInstall": [],
+  "beforeLaunch": [],
+  "launch": {
+    "name": "Battle.net",
+    "windowsPath": "C:\\Program Files (x86)\\Battle.net\\Battle.net Launcher.exe",
+    "arguments": []
+  },
+  "detect": [
+    "drive_c/Program Files (x86)/Battle.net/Battle.net Launcher.exe"
+  ],
+  "hideShortcuts": []
+}

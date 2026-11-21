@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "ubisoft-connect",
+  "name": "Ubisoft Connect",
+  "publisher": "Ubisoft",
+  "summary": "Oyun mağazası ve başlatıcısı",
+  "category": "game",
+  "rating": "broken",
+  "verdict": "Kuruluyor ama pencere bembeyaz kalıyor (tarayıcı bileşeni Wine'da çizim yapamıyor).",
+  "testedOn": {
+    "date": "2026-11-21",
+    "hardware": "Apple M3",
+    "macOS": "26.6"
+  },
+  "downloadNote": "260 MB kurulum dosyası; diskte yaklaşık 470 MB",
+  "bottle": {
+    "defaultName": "Ubisoft Connect",
+    "settings": {
+      "msync": true,
+      "virtualDesktop": {
+        "mode": "auto"
+      },
+      "fpsHud": false
+    }
+  },
+  "installer": {
+    "url": "https://ubistatic3-a.akamaihd.net/orbit/launcher_installer/UbisoftConnectInstaller.exe",
+    "sha256": null,
+    "fileName": "UbisoftConnectInstaller.exe",
+    "arguments": [
+      "/S"
+    ]
+  },
+  "afterInstall": [],
+  "beforeLaunch": [],
+  "launch": {
+    "name": "Ubisoft Connect",
+    "windowsPath": "C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\UbisoftConnect.exe",
+    "arguments": []
+  },
+  "detect": [
+    "drive_c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/UbisoftConnect.exe"
+  ],
+  "hideShortcuts": []
+}

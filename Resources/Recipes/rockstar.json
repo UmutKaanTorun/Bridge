@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "rockstar",
+  "name": "Rockstar Games Launcher",
+  "publisher": "Rockstar Games",
+  "summary": "Oyun mağazası ve başlatıcısı",
+  "category": "game",
+  "rating": "broken",
+  "verdict": "Kuruluyor ama açılışta “failed to initialize” hatası veriyor (grafik katmanında eksik bir D3D11 işlevi).",
+  "testedOn": {
+    "date": "2026-11-21",
+    "hardware": "Apple M3",
+    "macOS": "26.6"
+  },
+  "downloadNote": "110 MB kurulum dosyası; diskte yaklaşık 100 MB",
+  "bottle": {
+    "defaultName": "Rockstar Games Launcher",
+    "settings": {
+      "msync": true,
+      "virtualDesktop": {
+        "mode": "auto"
+      },
+      "fpsHud": false
+    }
+  },
+  "installer": {
+    "url": "https://gamedownloads.rockstargames.com/public/installer/Rockstar-Games-Launcher.exe",
+    "sha256": null,
+    "fileName": "Rockstar-Games-Launcher.exe",
+    "arguments": [
+      "/quiet"
+    ]
+  },
+  "afterInstall": [],
+  "beforeLaunch": [],
+  "launch": {
+    "name": "Rockstar Games Launcher",
+    "windowsPath": "C:\\Program Files\\Rockstar Games\\Launcher\\Launcher.exe",
+    "arguments": []
+  },
+  "detect": [
+    "drive_c/Program Files/Rockstar Games/Launcher/Launcher.exe"
+  ],
+  "hideShortcuts": []
+}

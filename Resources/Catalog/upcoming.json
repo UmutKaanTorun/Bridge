@@ -1,9 +1,4 @@
 [
-  { "id": "epic", "name": "Epic Games Launcher", "publisher": "Epic Games",
-    "summary": "Oyun mağazası ve başlatıcısı", "category": "game", "status": "broken",
-    "note": "Başlatıcı ilk kurulumda takılıyor. Yeni motor sürümüyle yeniden denenecek." },
-  { "id": "gog-galaxy", "name": "GOG Galaxy", "publisher": "GOG",
-    "summary": "Oyun mağazası ve başlatıcısı", "category": "game", "status": "testing" },
   { "id": "logo", "name": "Logo Go 3 / Tiger", "publisher": "Logo Yazılım",
     "summary": "Ön muhasebe ve ticari yazılım", "category": "business", "status": "testing" },
   { "id": "eta-sql", "name": "ETA:SQL",

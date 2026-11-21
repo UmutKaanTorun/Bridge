@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "epic",
+  "name": "Epic Games Launcher",
+  "publisher": "Epic Games",
+  "summary": "Oyun mağazası ve başlatıcısı",
+  "category": "game",
+  "rating": "opens",
+  "verdict": "Kurulum ve Türkçe giriş ekranı çalışıyor. Giriş yapıp oyun indirmek henüz denenmedi.",
+  "testedOn": {
+    "date": "2026-11-21",
+    "hardware": "Apple M3",
+    "macOS": "26.6"
+  },
+  "downloadNote": "260 MB kurulum dosyası; diskte yaklaşık 1,2 GB",
+  "bottle": {
+    "defaultName": "Epic Games Launcher",
+    "settings": {
+      "msync": true,
+      "virtualDesktop": {
+        "mode": "auto"
+      },
+      "fpsHud": false
+    }
+  },
+  "installer": {
+    "url": "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi",
+    "sha256": null,
+    "fileName": "EpicGamesLauncherInstaller.msi",
+    "arguments": [
+      "/qn"
+    ]
+  },
+  "afterInstall": [],
+  "beforeLaunch": [],
+  "launch": {
+    "name": "Epic Games Launcher",
+    "windowsPath": "C:\\Program Files\\Epic Games\\Launcher\\Portal\\Binaries\\Win64\\EpicGamesLauncher.exe",
+    "arguments": [
+      "-SkipBuildPatchPrereq"
+    ]
+  },
+  "detect": [
+    "drive_c/Program Files/Epic Games/Launcher/Portal/Binaries/Win64/EpicGamesLauncher.exe"
+  ],
+  "hideShortcuts": []
+}

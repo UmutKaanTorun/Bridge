@@ -30,9 +30,8 @@ struct RepositoryCatalogTests {
             #expect(recipe.publisher != nil, "\(recipe.id): yayıncı yok")
             #expect(recipe.verdict != nil, "\(recipe.id): açıklama yok")
             #expect(recipe.testedOn != nil, "\(recipe.id): test bilgisi yok")
-            if recipe.rating != .broken {
-                #expect(catalog.iconURL(for: recipe.id) != nil, "\(recipe.id): icon.png yok")
-            }
+            // Kur sayfası bütün platformları (çalışmayanlar dahil) simgesiyle gösterir.
+            #expect(catalog.iconURL(for: recipe.id) != nil, "\(recipe.id): icon.png yok")
         }
     }
 
