@@ -5,14 +5,24 @@
   "publisher": "Electronic Arts",
   "summary": "Oyun mağazası ve başlatıcısı",
   "category": "game",
-  "rating": "broken",
-  "verdict": "Kurulum programı Wine'da ilerlemiyor; şimdilik kurulamıyor. Takılırsa Durdur ile vazgeçebilirsin.",
+  "rating": "opens",
+  "verdict": "Kurulum ve giriş ekranı çalışıyor (arayüz İngilizce). Giriş yapıp oyun indirmek henüz denenmedi.",
   "testedOn": {
     "date": "2026-11-21",
     "hardware": "Apple M3",
     "macOS": "26.6"
   },
-  "downloadNote": "2 MB kurulum dosyası; asıl uygulama kurulurken indirilir",
+  "downloadNote": "2 MB kurulum dosyası; kurulumda yaklaşık 250 MB indirilir, diskte yaklaşık 1,3 GB",
+  "highlights": [
+    {
+      "title": "Kurulum takılmaz",
+      "detail": "Kurulum programı yarıda beklemeden biter"
+    },
+    {
+      "title": "Tarayıcı çizimi düzeltmesi",
+      "detail": "Giriş penceresi boş kalmaz"
+    }
+  ],
   "bottle": {
     "defaultName": "EA App",
     "settings": {
@@ -36,11 +46,13 @@
   "beforeLaunch": [],
   "launch": {
     "name": "EA App",
-    "windowsPath": "C:\\Program Files\\Electronic Arts\\EA Desktop\\EA Desktop\\EALauncher.exe",
-    "arguments": []
+    "windowsPath": "C:\\Program Files\\Electronic Arts\\EA Desktop\\EA Desktop\\EADesktop.exe",
+    "arguments": [
+      "--in-process-gpu"
+    ]
   },
   "detect": [
-    "drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop/EALauncher.exe"
+    "drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop/EADesktop.exe"
   ],
-  "hideShortcuts": []
+  "hideShortcuts": ["EA/EA.lnk"]
 }

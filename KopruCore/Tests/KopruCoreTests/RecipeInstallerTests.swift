@@ -38,13 +38,27 @@ struct RecipeInstallerTests {
 
         // Kurulum penceresi Dock'ta tarifin adıyla görünür; yalnızca kurulum programına verilir.
         #expect(td.recordedLines().filter { $0.hasPrefix("KOPRU_APP_NAME=") } == ["KOPRU_APP_NAME=Steam"])
-        let commands = td.recordedLines().filter { !$0.hasPrefix("WINEPREFIX=") && !$0.hasPrefix("KOPRU_APP_NAME=") }
+        let commands = td.recordedLines().filter {
+            !$0.hasPrefix("WINEPREFIX=") && !$0.hasPrefix("KOPRU_APP_NAME=") && !$0.hasPrefix("WINEDLLOVERRIDES=")
+        }
         #expect(commands.count == 4)
         #expect(commands[0] == "wine wineboot --init")
         // Kayıt defteri ancak wineserver kapanınca diske yazılır; bottle tamamlanmış sayılmadan beklenir.
         #expect(commands[1] == "wineserver -w")
         #expect(commands[2] == "wine \(td.paths.downloads.appendingPathComponent("SteamSetup.exe").path) /S")
         #expect(commands[3].hasPrefix("wine reg add HKCU\\Software\\Wine\\DllOverrides /v gameoverlayrenderer64"))
+    }
+
+    /// Motor Gecko ve Mono'yu `share/wine`'da taşıyor: wineboot mscoree/mshtml'i kapatmamalı, yoksa Mono'nun
+    /// destek paketi kurulmaz (.NET isteyen kurucular 1603'le düşer, EA App).
+    @Test func winebootKeepsMonoAndGeckoEnabled() async throws {
+        let td = try TempDir()
+        let runner = WineRunner(engine: try td.fakeEngine(), paths: td.paths,
+                                baseEnvironment: td.environment().filter { $0.key != "WINEDLLOVERRIDES" })
+        _ = try await BottleFactory(store: BottleStore(paths: td.paths), runner: runner)
+            .create(name: "Boş", settings: .default, recipeId: nil)
+        #expect(td.recordedLines().contains("wine wineboot --init"))
+        #expect(!td.recordedLines().contains { $0.hasPrefix("WINEDLLOVERRIDES=") })
     }
 
     @Test func winebootFailureKeepsHalfBottle() async throws {

@@ -59,9 +59,10 @@ public struct BottleFactory: Sendable {
         // Durdurulursa wineboot'un bitmesi beklenmez: wineboot sonlandırılır (WineRunner), başlattığı
         // Windows süreçleri de wineserver -k ile kapanır; yarım bottle'ı silmek çağırana kalır.
         try await withTaskCancellationHandler {
-            // mscoree/mshtml kapalı: wineboot Wine Mono / Gecko indirme penceresi açmasın.
-            let result = try await runner.run(.builtin("wineboot", arguments: ["--init"]), in: bottle,
-                                              extraEnvironment: ["WINEDLLOVERRIDES": "mscoree=d;mshtml=d"])
+            // Motor Gecko ve Mono'yu share/wine'da taşıyor: wineboot indirme penceresi açmadan Mono'nun destek
+            // paketini kurar (.NET kayıtları), Gecko yerinde kullanılır. mscoree/mshtml'i kapatmak bunları bozar:
+            // EA App'in .NET özel eylemi 1603 verir, mshtml Gecko penceresinde sonsuza dek bekler.
+            let result = try await runner.run(.builtin("wineboot", arguments: ["--init"]), in: bottle)
             try Self.throwIfCancelled(bottle)
             guard result.exitCode == 0 else {
                 throw InstallFailure(step: .preparing, bottle: bottle, underlying: InstallError.prefixInitFailed(exitCode: result.exitCode))

@@ -229,8 +229,8 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     public var highlights: [RecipeHighlight]?
 
     /// Tarif bu bottle'da kurulu mu? `detect` boşsa denetlenecek bir şey yoktur (kurulu sayılır);
-    /// doluysa her yol bottle'a göre var olmalı.
+    /// doluysa her yol bottle'a göre var olmalı. Programın Windows'ta açtığı bağlantılar izlenir (EA App).
     public func isInstalled(in bottleURL: URL) -> Bool {
-        detect.allSatisfy { FileManager.default.fileExists(atPath: bottleURL.appendingPathComponent($0).path) }
+        detect.allSatisfy { WineReparsePoint.resolve($0, in: bottleURL) != nil }
     }
 }
