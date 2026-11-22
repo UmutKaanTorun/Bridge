@@ -9,7 +9,7 @@ public enum EngineError: Error, Equatable, LocalizedError {
         case let .notFound(searched):
             "Wine motoru bulunamadı. Aranan yerler:\n" + searched.joined(separator: "\n")
         case .rosettaMissing:
-            "Köprü'nün çalışması için Rosetta gerekiyor. Terminal'de şu komutu çalıştır:\nsoftwareupdate --install-rosetta --agree-to-license"
+            "Bridge'in çalışması için Rosetta gerekiyor. Terminal'de şu komutu çalıştır:\nsoftwareupdate --install-rosetta --agree-to-license"
         }
     }
 }

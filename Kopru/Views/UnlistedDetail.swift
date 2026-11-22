@@ -32,7 +32,7 @@ struct UnlistedDetail: View {
                             Text("Listede olmayan program · \(fileSize)").font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    Text("Bu program için Köprü'de hazır ayar yok; genel Windows 10 ayarlarıyla kurulur.")
+                    Text("Bu program için Bridge'de hazır ayar yok; genel Windows 10 ayarlarıyla kurulur.")
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 10)

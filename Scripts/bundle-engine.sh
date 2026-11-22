@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Release derlemesinde Wine motorunu Kopru.app/Contents/Resources/Motor'a kopyalar.
+# Release derlemesinde Wine motorunu Bridge.app/Contents/Resources/Motor'a kopyalar.
 # Debug'da hiçbir şey yapmaz; uygulama motoru ~/WineEngines'ten okur.
 set -euo pipefail
 if [ "${CONFIGURATION:-Debug}" != "Release" ]; then

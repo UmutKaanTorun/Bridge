@@ -30,7 +30,7 @@ struct ImportSheet: View {
                 Form {
                     TextField("Bottle adı", text: $name)
                 }
-                Text("Klasör Köprü'nün bottle klasörüne taşınır; eski yolu kullanan betikler (ör. steam26.sh) onu artık bulamaz. Bottle'daki açık Windows programları kapatılır.")
+                Text("Klasör Bridge'in bottle klasörüne taşınır; eski yolu kullanan betikler (ör. steam26.sh) onu artık bulamaz. Bottle'daki açık Windows programları kapatılır.")
                     .font(.callout)
                     .foregroundStyle(.orange)
             } else {

@@ -33,15 +33,17 @@ targets:
     info:
       path: Kopru/Info.plist
       properties:
-        CFBundleName: Köprü
-        CFBundleDisplayName: Köprü
+        CFBundleName: Bridge
+        CFBundleDisplayName: Bridge
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.utilities
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
     settings:
       base:
-        PRODUCT_NAME: Kopru
+        # Uygulamanın görünen adı Bridge; modül, hedef ve veri klasörü (Application Support/Kopru) iç ad Kopru ile kalır.
+        PRODUCT_NAME: Bridge
+        PRODUCT_MODULE_NAME: Kopru
         PRODUCT_BUNDLE_IDENTIFIER: dev.kopru.Kopru
         # Kopru/AppIcon.icon (Icon Composer); Xcode eski macOS'lar için düz simgeyi kendisi üretir.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

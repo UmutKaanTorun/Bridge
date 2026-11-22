@@ -74,7 +74,7 @@ struct InstallPage: View {
     private var sectionLabel: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text("Oyun platformları").font(.title2.weight(.semibold))
-            Text("Tıkla, Köprü indirip kursun").font(.callout).foregroundStyle(.secondary)
+            Text("İndir'e tıkla, Bridge indirip kursun").font(.callout).foregroundStyle(.secondary)
         }
         .fixedSize()
     }
@@ -115,7 +115,7 @@ struct InstallPage: View {
         VStack(spacing: 6) {
             Text(query.isEmpty ? "Katalogda platform yok" : "“\(query)” için hazır tarif yok")
                 .font(.headline)
-            Text("Kurulum dosyan varsa pencereye sürükle; Köprü onu yeni bir bottle'a kurar.")
+            Text("Kurulum dosyan varsa pencereye sürükle; Bridge onu yeni bir bottle'a kurar.")
                 .foregroundStyle(.secondary)
             Button("Kurulum dosyası seç…") { model.isPickingInstaller = true }
                 .padding(.top, 6)
