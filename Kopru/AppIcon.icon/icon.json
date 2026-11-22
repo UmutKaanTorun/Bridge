@@ -1,0 +1,101 @@
+{
+  "fill": {
+    "linear-gradient": [
+      "srgb:0.16863,0.12157,0.40000,1.00000",
+      "srgb:0.03922,0.02745,0.12549,1.00000"
+    ],
+    "orientation": {
+      "start": {
+        "x": 0.5,
+        "y": 0
+      },
+      "stop": {
+        "x": 0.5,
+        "y": 1
+      }
+    }
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "mantar.svg",
+          "name": "mantar"
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
+      },
+      "lighting": "individual"
+    },
+    {
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "parilti.svg",
+          "name": "parilti",
+          "opacity": 0.6
+        },
+        {
+          "glass": true,
+          "image-name": "cam.svg",
+          "name": "cam",
+          "opacity": 0.2
+        },
+        {
+          "glass": true,
+          "image-name": "agiz.svg",
+          "name": "agiz",
+          "opacity": 0.45
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.3
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.7
+      },
+      "lighting": "individual"
+    },
+    {
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "kumanda.svg",
+          "name": "kumanda"
+        },
+        {
+          "glass": true,
+          "image-name": "sivi.svg",
+          "name": "sivi"
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.6
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.05
+      }
+    },
+    {
+      "layers": [
+        {
+          "glass": false,
+          "image-name": "arka.svg",
+          "name": "arka"
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}
