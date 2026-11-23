@@ -104,6 +104,7 @@ Bridge, CrossOver 26.3.0'ın açık kaynak kodundan derlenmiş bir Wine motoru (
 
 - Birim testleri: `swift test --package-path KopruCore`
 - Dağıtılabilir disk görüntüsü: Release derlemesinden sonra `Scripts/dmg-hazirla.sh`
+- Bu sayfadaki ekran görüntüleri: `Scripts/ekran-goruntuleri.sh` (açık ve koyu temada 3840×2160 üretir; çalışırken bir dakika kadar bilgisayara dokunmayın)
 
 ## Proje yapısı
 
@@ -111,7 +112,13 @@ Bridge, CrossOver 26.3.0'ın açık kaynak kodundan derlenmiş bir Wine motoru (
 Kopru/         SwiftUI uygulaması (pencere, kenar çubuğu, sayfalar)
 KopruCore/     Arayüzden bağımsız çekirdek: motor, bottle, tarif, kurulum, program tarayıcı
 Resources/     Platform tarifleri (JSON), tarif dosyaları ve simgeler
-Scripts/       Motor kopyalama, motor eklentileri, DMG hazırlama
-Tools/         Motor yamaları ve yardımcı araçlar (Steam ve CEF aracıları, tarif simgesi)
+Scripts/       Motor kopyalama, motor eklentileri, DMG hazırlama, ekran görüntüleri
+Tools/         Motor yamaları ve yardımcı araçlar (Steam ve CEF aracıları, tarif simgesi, ekran görüntüsü)
 docs/          Tasarım belgeleri, planlar ve ekran görüntüleri
 ```
+
+## Lisans
+
+Telif hakkı © 2026 Umut Kaan Torun. Tüm hakları saklıdır. Yayımlanan sürümleri kişisel kullanım için indirip çalıştırabilirsiniz; kaynak kodu izin olmadan kopyalanamaz ya da dağıtılamaz. Ayrıntılar [LICENSE](LICENSE) dosyasında.
+
+Uygulamayla birlikte dağıtılan Wine, DXMT, Wine Gecko, Wine Mono ve motor kütüphaneleri kendi açık kaynak lisanslarıyla gelir: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Platform ve oyun adları sahiplerinin ticari markalarıdır; Bridge bu şirketlerle bağlantılı değildir.

@@ -1,0 +1,56 @@
+Bridge (eski adıyla Köprü)
+Telif hakkı © 2026 Umut Kaan Torun. Tüm hakları saklıdır.
+
+Bu depodaki kaynak kodu, betikler, belgeler, görseller ve diğer dosyalar ("Yazılım"), aşağıdaki istisnalar
+dışında Umut Kaan Torun'a aittir. Yazılımın tamamı ya da herhangi bir bölümü, telif hakkı sahibinin önceden
+verilmiş yazılı izni olmadan kopyalanamaz, değiştirilemez, başka bir çalışmayla birleştirilemez, yayımlanamaz,
+dağıtılamaz, alt lisanslanamaz ya da satılamaz.
+
+Kullanım izni
+  Telif hakkı sahibinin yayımladığı Bridge sürümlerini (GitHub Releases'taki disk görüntüleri) kendi
+  bilgisayarlarınızda kişisel kullanım için indirip çalıştırabilirsiniz. Bu izin, uygulamanın ya da
+  parçalarının yeniden dağıtılmasını, satılmasını ya da değiştirilmesini kapsamaz.
+
+İstisnalar
+  1. Tools/motor-yamalari/ altındaki yamalar Wine'ın türev çalışmalarıdır ve Wine gibi GNU Lesser General
+     Public License 2.1 ya da (tercihinize göre) sonraki bir sürümü altındadır.
+  2. Uygulamanın içinde dağıtılan Wine motoru, DXMT, Wine Gecko, Wine Mono ve motorun kullandığı kütüphaneler
+     kendi lisanslarıyla gelir; ayrıntılar THIRD_PARTY_NOTICES.md dosyasındadır. Bu lisans, o bileşenlerin
+     lisanslarının size tanıdığı hakları hiçbir biçimde kısıtlamaz.
+  3. Resources/RecipeFiles/ altındaki platform simgeleri ile ekran görüntülerinde görünen platform ve oyun
+     adları ve simgeleri (Steam, Epic Games, GOG, Battle.net, EA, Ubisoft, Rockstar Games ve diğerleri)
+     sahiplerinin ticari markalarıdır. Bridge bu şirketlerle bağlantılı değildir ve onlarca onaylanmamıştır.
+
+YAZILIM "OLDUĞU GİBİ" SUNULUR. TİCARİ ELVERİŞLİLİK, BELİRLİ BİR AMACA UYGUNLUK VE HAK İHLALİ OLMAMASI DAHİL
+AÇIK YA DA ZIMNİ HİÇBİR GARANTİ VERİLMEZ. TELİF HAKKI SAHİBİ, YAZILIMIN KULLANIMINDAN YA DA KULLANILAMAMASINDAN
+DOĞAN HİÇBİR ZARARDAN SORUMLU TUTULAMAZ.
+
+-------------------------------------------------------------------------------------------------------------
+
+Bridge (formerly Köprü)
+Copyright © 2026 Umut Kaan Torun. All rights reserved.
+
+The source code, scripts, documentation, images and other files in this repository (the "Software") are the
+property of Umut Kaan Torun, except as noted below. No part of the Software may be copied, modified, merged
+with other works, published, distributed, sublicensed or sold without the prior written permission of the
+copyright holder.
+
+Permission to use
+  You may download and run the Bridge releases published by the copyright holder (the disk images on GitHub
+  Releases) on your own computers for personal use. This permission does not cover redistributing, selling
+  or modifying the application or any part of it.
+
+Exceptions
+  1. The patches in Tools/motor-yamalari/ are derivative works of Wine and, like Wine, are licensed under the
+     GNU Lesser General Public License version 2.1 or (at your option) any later version.
+  2. The Wine engine, DXMT, Wine Gecko, Wine Mono and the libraries used by the engine, all distributed inside
+     the application, come with their own licenses; see THIRD_PARTY_NOTICES.md. This license does not
+     restrict any rights those licenses grant you.
+  3. The platform icons in Resources/RecipeFiles/, and the platform and game names and icons shown in the
+     screenshots (Steam, Epic Games, GOG, Battle.net, EA, Ubisoft, Rockstar Games and others), are trademarks
+     of their respective owners. Bridge is not affiliated with or endorsed by these companies.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
