@@ -45,6 +45,7 @@ struct EpicGameScannerTests {
         let among = try #require(games.first)
         #expect(among.appName == "among")
         #expect(among.executable == "C:\\Program Files\\Epic Games\\AmongUs\\Among Us.exe")
+        #expect(among.installFolder == "C:\\Program Files\\Epic Games\\AmongUs")
         #expect(among.launchURL == "com.epicgames.launcher://apps/ns-among%3Aitem-among%3Aamong?action=launch&silent=true")
     }
 

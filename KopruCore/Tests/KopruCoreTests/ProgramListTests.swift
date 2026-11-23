@@ -82,6 +82,7 @@ struct ProgramListTests {
     }
 
     let amongUs = EpicGame(name: "Among Us", appName: "among", executable: "C:\\Program Files\\Epic Games\\AmongUs\\Among Us.exe",
+                           installFolder: "C:\\Program Files\\Epic Games\\AmongUs",
                            launchURL: "com.epicgames.launcher://apps/ns%3Aitem%3Aamong?action=launch&silent=true")
 
     @Test func epicGamesComeAfterPinnedBeforeShortcuts() {

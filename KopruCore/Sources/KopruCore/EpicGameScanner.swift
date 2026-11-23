@@ -8,6 +8,8 @@ public struct EpicGame: Hashable, Sendable, Identifiable {
     public let appName: String
     /// Oyunun exe'si (Windows yolu); simge buradan okunur.
     public let executable: String
+    /// Oyunun kurulum klasörü (Windows yolu); anti-cheat burada aranır.
+    public let installFolder: String
     /// Epic'in oyunu açtığı bağlantı. Oyunlar Epic hesabıyla açıldığı için exe doğrudan çalıştırılmaz.
     public let launchURL: String
 
@@ -46,6 +48,7 @@ public enum EpicGameScanner {
                   FileManager.default.fileExists(atPath: unix.path) else { continue }
             let id = [manifest.CatalogNamespace, manifest.CatalogItemId, manifest.AppName].joined(separator: "%3A")
             games.append(EpicGame(name: manifest.DisplayName, appName: manifest.AppName, executable: executable,
+                                  installFolder: location,
                                   launchURL: "com.epicgames.launcher://apps/\(id)?action=launch&silent=true"))
         }
         return games.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

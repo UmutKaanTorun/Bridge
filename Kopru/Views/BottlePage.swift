@@ -35,6 +35,15 @@ struct BottlePage: View {
             }
         }
         .navigationTitle(bottle.info.name)
+        .confirmationDialog(Text("\(model.antiCheatLaunch?.item.name ?? "") büyük olasılıkla açılmayacak"),
+                            isPresented: Binding(get: { model.antiCheatLaunch != nil },
+                                                 set: { if !$0 { model.antiCheatLaunch = nil } }),
+                            presenting: model.antiCheatLaunch) { launch in
+            Button("Yine de Aç") { model.launchDespiteAntiCheat(launch.item) }
+            Button("Vazgeç", role: .cancel) {}
+        } message: { launch in
+            Text("Bu oyun \(launch.antiCheat.displayName) kullanıyor. Anti-cheat'in Wine için sunduğu modül yalnızca Linux'ta çalışıyor; macOS'ta yüklenemediği için oyun açılırken hata verir.")
+        }
     }
 }
 
@@ -153,6 +162,7 @@ private struct ProgramTile: View {
     let item: ProgramItem
     let bottle: Bottle
     @State private var icon: NSImage?
+    @State private var antiCheat: AntiCheat?
 
     var body: some View {
         VStack(spacing: 8) {
@@ -172,7 +182,11 @@ private struct ProgramTile: View {
                 }
             }
             .frame(width: 64, height: 64)
+            .overlay(alignment: .bottomTrailing) {
+                if let antiCheat { AntiCheatBadge(antiCheat: antiCheat) }
+            }
             .task(id: item.id) { icon = await model.icon(for: item, in: bottle) }
+            .task(id: item.id) { antiCheat = await model.antiCheat(for: item, in: bottle) }
             Text(item.name)
                 .font(.callout)
                 .multilineTextAlignment(.center)
@@ -190,7 +204,12 @@ private struct ProgramTile: View {
                 Button("Listeden Kaldır") { model.removeFromList(item) }
             }
         }
-        .help(item.name)
+        .help(helpText)
+    }
+
+    private var helpText: String {
+        guard let antiCheat else { return item.name }
+        return "\(item.name): \(antiCheat.displayName) kullanıyor, macOS'ta büyük olasılıkla açılmaz."
     }
 
     /// Tarifin başlatıcısı ve Epic oyunları elle kaldırılmaz (oyun Epic'ten kaldırılınca listeden düşer).
@@ -209,5 +228,20 @@ private struct ProgramTile: View {
         case let .shortcut(shortcut):
             if case .steamURL = shortcut.kind { "gamecontroller" } else { "app" }
         }
+    }
+}
+
+/// Kutucuk simgesinin köşesindeki uyarı: oyun anti-cheat kullanıyor, Bridge'de büyük olasılıkla açılmaz.
+private struct AntiCheatBadge: View {
+    let antiCheat: AntiCheat
+
+    var body: some View {
+        Image(systemName: "exclamationmark.shield.fill")
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(.white, .orange)
+            .font(.system(size: 17, weight: .semibold))
+            .shadow(color: .black.opacity(0.3), radius: 1, y: 0.5)
+            .offset(x: 4, y: 4)
+            .accessibilityLabel("\(antiCheat.displayName) kullanıyor")
     }
 }

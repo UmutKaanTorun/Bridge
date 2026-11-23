@@ -11,6 +11,13 @@ struct AppAlert: Identifiable {
     var logURL: URL?
 }
 
+/// Anti-cheat'li bir oyunu açmadan önce sorulan soru.
+struct AntiCheatLaunch: Identifiable {
+    let id = UUID()
+    let item: ProgramItem
+    let antiCheat: AntiCheat
+}
+
 /// Açılışta Köprü'yü kullanılamaz yapan sorun.
 enum StartupProblem: Equatable {
     case engineMissing(String)
@@ -104,6 +111,8 @@ final class AppModel {
     /// Tarif simgeleri (RecipeFiles/<id>/icon.png); bir kez okunur.
     @ObservationIgnored private var recipeIconCache: [String: NSImage] = [:]
     var alert: AppAlert?
+    /// Açılmak istenen anti-cheat'li oyun; bottle sayfası soruyu bununla gösterir.
+    var antiCheatLaunch: AntiCheatLaunch?
     var install: InstallProgress?
     /// Süren platform kurulumu; "Durdur" bu görevi iptal eder.
     @ObservationIgnored private var installTask: Task<Void, Never>?
@@ -255,9 +264,28 @@ final class AppModel {
 
     // MARK: Programları açma
 
+    /// Anti-cheat'li oyun hemen açılmaz; önce "Yine de Aç / Vazgeç" sorulur (bkz. `antiCheatLaunch`).
     func launch(_ item: ProgramItem) {
         guard let runner, let bottle = selectedBottle else { return }
+        if let antiCheat = AntiCheatDetector.detect(for: item, bottleURL: bottle.url) {
+            antiCheatLaunch = AntiCheatLaunch(item: item, antiCheat: antiCheat)
+            return
+        }
         start(item.target, name: item.name, in: bottle, runner: runner)
+    }
+
+    /// Anti-cheat uyarısında "Yine de Aç": bazı oyunlar anti-cheat'siz (çevrimdışı) açılabiliyor.
+    func launchDespiteAntiCheat(_ item: ProgramItem) {
+        guard let runner, let bottle = selectedBottle else { return }
+        start(item.target, name: item.name, in: bottle, runner: runner)
+    }
+
+    /// Kutucuktaki anti-cheat işareti için; oyun klasörü ana iş parçacığının dışında taranır.
+    func antiCheat(for item: ProgramItem, in bottle: Bottle) async -> AntiCheat? {
+        let bottleURL = bottle.url
+        return await Task.detached(priority: .utility) {
+            AntiCheatDetector.detect(for: item, bottleURL: bottleURL)
+        }.value
     }
 
     /// Tarifin başlatıcısını verilen bottle'da açar (Kur sayfasındaki "Aç"); sayfa değişmez.
