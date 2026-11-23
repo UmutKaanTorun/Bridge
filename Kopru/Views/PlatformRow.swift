@@ -5,6 +5,10 @@ import SwiftUI
 /// indirme yüklü bir iş, yanlışlıkla başlamasın diye yalnızca "İndir" düğmesi indirip kurar, "Aç" düğmesi açar.
 struct PlatformRow: View {
     @Environment(AppModel.self) private var model
+    /// Satır içeriğinin vurgu arka planına uzaklığı. Sayfadaki başlıklar da bu kadar içeriden başlar ki
+    /// metinler ve düğmeler aynı çizgide dursun, vurgu arka planı onların dışına taşsın.
+    static let contentInset: CGFloat = 12
+
     let recipe: Recipe
     @State private var isHovered = false
     @State private var confirmsBroken = false
@@ -38,7 +42,7 @@ struct PlatformRow: View {
             Spacer(minLength: 8)
             trailing(phase)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Self.contentInset)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(isHovered && highlightsOnHover(phase) ? AnyShapeStyle(.quaternary.opacity(0.5)) : AnyShapeStyle(.clear),

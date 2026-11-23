@@ -54,6 +54,7 @@ struct InstallPage: View {
             Spacer()
             searchField.frame(minWidth: 180, maxWidth: 280)
         }
+        .padding(.horizontal, PlatformRow.contentInset)
     }
 
     private var sectionTitle: some View {
@@ -68,7 +69,7 @@ struct InstallPage: View {
                 unlistedLink
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, PlatformRow.contentInset)
     }
 
     private var sectionLabel: some View {
@@ -150,7 +151,7 @@ private struct HiddenUnlistedInstallBanner: View {
                 Spacer()
                 Button("Göster") { model.showInstallPage(unlisted: file) }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, PlatformRow.contentInset)
             .padding(.vertical, 8)
             .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
         }
