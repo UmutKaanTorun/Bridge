@@ -39,9 +39,12 @@ struct BottleSidebar: View {
         }
         .safeAreaInset(edge: .top) {
             HStack(spacing: 8) {
-                BridgeGlyph()
-                    .stroke(.primary, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                    .frame(width: 20, height: 20)
+                // Uygulamanın kendi simgesi (Kopru/AppIcon.icon); simge değişince burası da değişir.
+                Image(nsImage: NSApplication.shared.applicationIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 24, height: 24)
+                    .accessibilityHidden(true)
                 Text("Bridge").font(.title3.weight(.semibold))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,29 +100,5 @@ private struct InstallRowIcon: View {
     var body: some View {
         Image(systemName: "plus.circle")
             .foregroundStyle(prominence == .increased ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
-    }
-}
-
-/// Bridge'in asma köprü simgesi (24 birimlik ızgarada): yol, yolda biten iki kule, aralarında sarkan ana kablo
-/// ve dışa kıvrılan yan kablolar. Uygulama simgesinin (Kopru/AppIcon.icon) sadeleştirilmiş hâli: 20 pt'de
-/// askılar seçilmiyor, kulelerden yola inen yan kablolar da kuleyle üçgen kurup çizimi ağaca benzetiyordu.
-private struct BridgeGlyph: Shape {
-    func path(in rect: CGRect) -> Path {
-        let unit = min(rect.width, rect.height) / 24
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + x * unit, y: rect.minY + y * unit)
-        }
-        var path = Path()
-        path.move(to: point(2, 16))
-        path.addLine(to: point(22, 16))
-        for x in [7.0, 17.0] {
-            path.move(to: point(x, 6))
-            path.addLine(to: point(x, 16))
-        }
-        path.move(to: point(2, 10.5))
-        path.addCurve(to: point(7, 7), control1: point(4, 9.5), control2: point(5.5, 8.2))
-        path.addCurve(to: point(17, 7), control1: point(10.33, 17), control2: point(13.67, 17))
-        path.addCurve(to: point(22, 10.5), control1: point(18.5, 8.2), control2: point(20, 9.5))
-        return path
     }
 }
