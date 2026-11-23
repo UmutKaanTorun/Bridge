@@ -81,6 +81,31 @@ struct ProgramListTests {
         #expect(items.map(\.name) == ["Epic Games Launcher", "Alt", "Fortnite", "Hedefsiz"])
     }
 
+    let amongUs = EpicGame(name: "Among Us", appName: "among", executable: "C:\\Program Files\\Epic Games\\AmongUs\\Among Us.exe",
+                           launchURL: "com.epicgames.launcher://apps/ns%3Aitem%3Aamong?action=launch&silent=true")
+
+    @Test func epicGamesComeAfterPinnedBeforeShortcuts() {
+        let items = ProgramList.items(recipeLaunch: epicLaunch, pinned: [pinned], epicGames: [amongUs], shortcuts: [notepad],
+                                      bottleURL: bottleURL)
+        #expect(items.map(\.name) == ["Epic Games Launcher", "Araç", "Among Us", "Notepad++"])
+        #expect(items[2].source == .epicGame(amongUs))
+        #expect(items[2].id == "epic:among")
+    }
+
+    /// Epic oyunları Epic hesabıyla açılır: tarifin başlatıcısına önce bağlantı, sonra tarifin argümanları verilir.
+    @Test func epicGamesLaunchThroughEpicRecipe() {
+        let items = ProgramList.items(recipeLaunch: epicLaunch, pinned: [], epicGames: [amongUs], shortcuts: [], bottleURL: bottleURL)
+        #expect(items.last?.target == .windowsPath(epicLaunch.windowsPath, arguments: [amongUs.launchURL, "-SkipBuildPatchPrereq"]))
+    }
+
+    /// Tarif yoksa ya da başka bir platformun tarifiyse bağlantıyı Windows açar (Epic'in kaydettiği protokol).
+    @Test func epicGamesWithoutEpicRecipeOpenWithStart() {
+        for launch in [nil, steamLaunch] {
+            let items = ProgramList.items(recipeLaunch: launch, pinned: [], epicGames: [amongUs], shortcuts: [], bottleURL: bottleURL)
+            #expect(items.last?.target == .builtin("start", arguments: [amongUs.launchURL]))
+        }
+    }
+
     @Test func withoutRecipeLauncherShortcutsStay() {
         let shortcut = link("Epic Games Launcher", target: epicLaunch.windowsPath)
         let items = ProgramList.items(recipeLaunch: nil, pinned: [], shortcuts: [shortcut], bottleURL: bottleURL)

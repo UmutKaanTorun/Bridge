@@ -5,6 +5,7 @@ public struct ProgramItem: Identifiable, Hashable, Sendable {
     public enum Source: Hashable, Sendable {
         case recipe(RecipeLaunch)
         case pinned(PinnedProgram)
+        case epicGame(EpicGame)
         case shortcut(ShortcutProgram)
     }
 
@@ -16,18 +17,20 @@ public struct ProgramItem: Identifiable, Hashable, Sendable {
         switch source {
         case let .recipe(launch): "recipe:\(launch.windowsPath)"
         case let .pinned(program): "pinned:\(program.windowsPath)"
+        case let .epicGame(game): "epic:\(game.appName)"
         case let .shortcut(shortcut): "shortcut:\(shortcut.relativePath)"
         }
     }
 }
 
 public enum ProgramList {
-    /// Sıra: tarif başlatıcısı, sabitlenenler, kısayollar.
+    /// Sıra: tarif başlatıcısı, sabitlenenler, Epic oyunları, kısayollar.
     /// Steam oyunu kısayolları, tarif varsa tarifin başlatıcısıyla açılır (aracı ve seçenekler atlanmasın).
     /// Tarifin başlatıcısıyla aynı klasördeki bir programı gösteren kısayol (kurulumun kendi kısayolu) listelenmez:
     /// kutucuğun ikizi olur ve tarifin argümanları olmadan açılır.
-    public static func items(recipeLaunch: RecipeLaunch?, pinned: [PinnedProgram], shortcuts: [ShortcutProgram],
-                             bottleURL: URL) -> [ProgramItem] {
+    /// Epic oyunları Epic'in bağlantısıyla açılır: tarif Epic'inse onun başlatıcısıyla, değilse `wine start` ile.
+    public static func items(recipeLaunch: RecipeLaunch?, pinned: [PinnedProgram], epicGames: [EpicGame] = [],
+                             shortcuts: [ShortcutProgram], bottleURL: URL) -> [ProgramItem] {
         var items: [ProgramItem] = []
         let recipeArguments = recipeLaunch?.arguments(forBottleAt: bottleURL) ?? []
         if let launch = recipeLaunch {
@@ -37,6 +40,17 @@ public enum ProgramList {
         for program in pinned {
             items.append(ProgramItem(name: program.name, source: .pinned(program),
                                      target: .windowsPath(program.windowsPath, arguments: program.arguments)))
+        }
+        let epicLaunch = recipeLaunch.flatMap { isEpicLauncher($0.windowsPath) ? $0 : nil }
+        for game in epicGames {
+            let target: LaunchTarget = if let epicLaunch {
+                // Bağlantı ilk argüman: Epic komut satırının geri kalanını bağlantı sanıyor (Windows'un
+                // protokol işleyicisi de `EpicGamesLauncher.exe %1` çağırır).
+                .windowsPath(epicLaunch.windowsPath, arguments: [game.launchURL] + recipeArguments)
+            } else {
+                .builtin("start", arguments: [game.launchURL])
+            }
+            items.append(ProgramItem(name: game.name, source: .epicGame(game), target: target))
         }
         let launcherFolder = recipeLaunch.map { folder(of: $0.windowsPath) }
         for shortcut in shortcuts {
@@ -52,6 +66,10 @@ public enum ProgramList {
             items.append(ProgramItem(name: shortcut.name, source: .shortcut(shortcut), target: target))
         }
         return items
+    }
+
+    static func isEpicLauncher(_ windowsPath: String) -> Bool {
+        windowsPath.replacingOccurrences(of: "/", with: "\\").lowercased().hasSuffix("\\epicgameslauncher.exe")
     }
 
     /// Windows yolunun klasörü, karşılaştırma için: "C:/A/b.exe" → "c:\\a".

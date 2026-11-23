@@ -53,6 +53,8 @@ public enum ProgramIcon {
             return [IconLocation(windowsPath: launch.windowsPath, index: 0)]
         case let .pinned(program):
             return [IconLocation(windowsPath: program.windowsPath, index: 0)]
+        case let .epicGame(game):
+            return [IconLocation(windowsPath: game.executable, index: 0)]
         case let .shortcut(shortcut):
             guard let data = try? Data(contentsOf: shortcut.url) else { return [] }
             switch shortcut.kind {

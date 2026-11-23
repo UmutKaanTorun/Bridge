@@ -94,6 +94,7 @@ final class AppModel {
         set { selection = newValue.map(SidebarItem.bottle) }
     }
     private(set) var shortcuts: [ShortcutProgram] = []
+    private(set) var epicGames: [EpicGame] = []
     private(set) var runningCounts: [Bottle.ID: Int] = [:]
     /// `whileRunning` koruması çalışan bottle'lar (bottle başına tek görev).
     @ObservationIgnored private var guardedBottles: Set<Bottle.ID> = []
@@ -137,8 +138,14 @@ final class AppModel {
         }
         reload()
         #if DEBUG
-        // Ekran görüntüsüyle denetim için: KOPRU_SAYFA=kur Debug derlemesini Program kur sayfasında açar.
-        if ProcessInfo.processInfo.environment["KOPRU_SAYFA"] == "kur" { selection = .install }
+        // Ekran görüntüsüyle denetim için: KOPRU_SAYFA=kur Debug derlemesini Program kur sayfasında,
+        // KOPRU_SAYFA=bottle:<ad> o bottle'ın sayfasında açar.
+        let page = ProcessInfo.processInfo.environment["KOPRU_SAYFA"] ?? ""
+        if page == "kur" { selection = .install }
+        if page.hasPrefix("bottle:"), let bottle = bottles.first(where: { $0.info.name == page.dropFirst(7) }) {
+            selection = .bottle(bottle.id)
+            rescan()
+        }
         // KOPRU_SAHTE_KURULUM=indiriliyor:epic | hata:epic → satırın kurulum durumlarını gösterir (gerçek kurulum yok).
         if let fake = ProcessInfo.processInfo.environment["KOPRU_SAHTE_KURULUM"]?.split(separator: ":"), fake.count == 2,
            let recipe = catalog.recipe(id: String(fake[1])) {
@@ -186,6 +193,7 @@ final class AppModel {
         guard let bottle = selectedBottle else { return [] }
         return ProgramList.items(recipeLaunch: recipe(for: bottle)?.launch,
                                  pinned: bottle.info.pinnedPrograms,
+                                 epicGames: epicGames,
                                  shortcuts: shortcuts,
                                  bottleURL: bottle.url)
     }
@@ -211,10 +219,12 @@ final class AppModel {
     func rescan() {
         guard let bottle = selectedBottle else {
             shortcuts = []
+            epicGames = []
             return
         }
         let hidden = Set(bottle.info.hiddenShortcuts).union(recipe(for: bottle)?.hideShortcuts ?? [])
         shortcuts = ProgramScanner.scan(bottleURL: bottle.url, hidden: hidden)
+        epicGames = EpicGameScanner.scan(bottleURL: bottle.url)
     }
 
     /// Kutucuğun gerçek program simgesi; dosya okuması ana iş parçacığının dışında yapılır.
@@ -318,7 +328,7 @@ final class AppModel {
             bottle.info.hiddenShortcuts.append(shortcut.relativePath)
         case let .pinned(program):
             bottle.info.pinnedPrograms.removeAll { $0 == program }
-        case .recipe:
+        case .recipe, .epicGame:
             return
         }
         save(bottle)
@@ -330,6 +340,7 @@ final class AppModel {
         let url: URL? = switch item.source {
         case let .shortcut(shortcut): shortcut.url
         case let .pinned(program): WindowsPath.toUnix(program.windowsPath, bottleURL: bottle.url)
+        case let .epicGame(game): WindowsPath.toUnix(game.executable, bottleURL: bottle.url)
         case let .recipe(launch): WindowsPath.toUnix(launch.windowsPath, bottleURL: bottle.url)
         }
         if let url { NSWorkspace.shared.activateFileViewerSelecting([url]) }

@@ -88,7 +88,7 @@ struct ContentView: View {
         if let problem = model.startupProblem {
             StartupProblemView(problem: problem)
         } else if model.isBottlePage, let bottle = model.selectedBottle {
-            ProgramGrid(bottle: bottle)
+            BottlePage(bottle: bottle)
         } else {
             InstallPage()
         }
