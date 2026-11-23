@@ -39,6 +39,10 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.utilities
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        # Wine süreçlerinin mikrofon izni Bridge'e yazılır. Bu açıklama yoksa macOS izni sormadan reddeder,
+        # Wine'ın winecoreaudio'su yanıtı sonsuza dek bekler ve mikrofon açan oyun (ör. PEAK'in sesli sohbeti)
+        # yükleme ekranında donar.
+        NSMicrophoneUsageDescription: Bridge'de çalışan oyunlar ve programlar, sesli sohbet gibi özellikler için mikrofonunuzu kullanmak istiyor.
     settings:
       base:
         # Uygulamanın görünen adı Bridge; modül, hedef ve veri klasörü (Application Support/Kopru) iç ad Kopru ile kalır.
