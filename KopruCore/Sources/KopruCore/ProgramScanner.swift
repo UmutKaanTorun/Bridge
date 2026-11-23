@@ -14,6 +14,16 @@ public struct ShortcutProgram: Hashable, Sendable, Identifiable {
     public let relativePath: String
     public let url: URL
     public let kind: Kind
+    /// .lnk'nin gösterdiği program (Windows yolu); okunamadıysa ya da .url ise nil.
+    public let target: String?
+
+    public init(name: String, relativePath: String, url: URL, kind: Kind, target: String? = nil) {
+        self.name = name
+        self.relativePath = relativePath
+        self.url = url
+        self.kind = kind
+        self.target = target
+    }
 
     public var id: String { relativePath }
 }
@@ -49,14 +59,16 @@ public enum ProgramScanner {
                 if excludedWords.contains(where: { name.localizedCaseInsensitiveContains($0) }) { continue }
                 let url = root.appendingPathComponent(relative)
                 let kind: ShortcutProgram.Kind
+                var target: String?
                 if ext == "url" {
-                    guard let target = steamURL(in: url) else { continue }
-                    kind = .steamURL(target)
+                    guard let steam = steamURL(in: url) else { continue }
+                    kind = .steamURL(steam)
                 } else {
                     kind = .link
+                    target = (try? Data(contentsOf: url)).flatMap { ShellLink(data: $0) }?.target
                 }
                 seen.insert(relative)
-                result.append(ShortcutProgram(name: name, relativePath: relative, url: url, kind: kind))
+                result.append(ShortcutProgram(name: name, relativePath: relative, url: url, kind: kind, target: target))
             }
         }
         return result.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

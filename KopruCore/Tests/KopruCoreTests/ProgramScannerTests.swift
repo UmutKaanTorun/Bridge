@@ -42,6 +42,17 @@ struct ProgramScannerTests {
         #expect(found.map(\.name) == ["Thief Simulator 2 Prologue", "WinRAR"])
     }
 
+    /// .lnk kısayollarının hedefi okunur; okunamayanınki boş kalır.
+    @Test func linkTargetsAreRead() throws {
+        let td = try TempDir()
+        let epic = "C:\\Program Files\\Epic Games\\Launcher\\Portal\\Binaries\\Win64\\EpicGamesLauncher.exe"
+        try td.file("\(Self.crossover)/Epic Games Launcher.lnk", data: shellLinkData(target: epic))
+        try td.file("\(Self.crossover)/Bozuk.lnk")
+        let found = ProgramScanner.scan(bottleURL: td.url.appendingPathComponent("bottle"), hidden: [])
+        #expect(found.map(\.name) == ["Bozuk", "Epic Games Launcher"])
+        #expect(found.map(\.target) == [nil, epic])
+    }
+
     @Test func emptyBottleHasNoPrograms() throws {
         let td = try TempDir()
         #expect(ProgramScanner.scan(bottleURL: try td.dir("bos"), hidden: []).isEmpty)

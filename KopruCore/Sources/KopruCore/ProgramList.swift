@@ -24,6 +24,8 @@ public struct ProgramItem: Identifiable, Hashable, Sendable {
 public enum ProgramList {
     /// Sıra: tarif başlatıcısı, sabitlenenler, kısayollar.
     /// Steam oyunu kısayolları, tarif varsa tarifin başlatıcısıyla açılır (aracı ve seçenekler atlanmasın).
+    /// Tarifin başlatıcısıyla aynı klasördeki bir programı gösteren kısayol (kurulumun kendi kısayolu) listelenmez:
+    /// kutucuğun ikizi olur ve tarifin argümanları olmadan açılır.
     public static func items(recipeLaunch: RecipeLaunch?, pinned: [PinnedProgram], shortcuts: [ShortcutProgram],
                              bottleURL: URL) -> [ProgramItem] {
         var items: [ProgramItem] = []
@@ -36,7 +38,11 @@ public enum ProgramList {
             items.append(ProgramItem(name: program.name, source: .pinned(program),
                                      target: .windowsPath(program.windowsPath, arguments: program.arguments)))
         }
+        let launcherFolder = recipeLaunch.map { folder(of: $0.windowsPath) }
         for shortcut in shortcuts {
+            if let launcherFolder, let shortcutTarget = shortcut.target, folder(of: shortcutTarget) == launcherFolder {
+                continue
+            }
             let target: LaunchTarget
             if case let .steamURL(url) = shortcut.kind, let launch = recipeLaunch {
                 target = .windowsPath(launch.windowsPath, arguments: recipeArguments + [url])
@@ -46,5 +52,12 @@ public enum ProgramList {
             items.append(ProgramItem(name: shortcut.name, source: .shortcut(shortcut), target: target))
         }
         return items
+    }
+
+    /// Windows yolunun klasörü, karşılaştırma için: "C:/A/b.exe" → "c:\\a".
+    static func folder(of windowsPath: String) -> String {
+        let path = windowsPath.replacingOccurrences(of: "/", with: "\\").lowercased()
+        guard let slash = path.lastIndex(of: "\\") else { return "" }
+        return String(path[..<slash])
     }
 }
