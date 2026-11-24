@@ -43,5 +43,5 @@
   },
   "detect": ["drive_c/Program Files (x86)/Steam/steam.exe"],
   "hideShortcuts": ["Steam/Steam.lnk"],
-  "nonGamePrograms": ["steamwebhelper.exe", "steamwebhelper_gercek.exe", "steamservice.exe", "steamsysinfo.exe", "steamerrorreporter.exe", "steamerrorreporter64.exe", "gameoverlayui.exe", "gameoverlayui64.exe"]
+  "nonGamePrograms": ["steamwebhelper.exe", "steamwebhelper_gercek.exe", "steamservice.exe", "steamsysinfo.exe", "steamerrorreporter.exe", "steamerrorreporter64.exe", "gameoverlayui.exe", "gameoverlayui64.exe", "hardwareupdater.exe", "gldriverquery.exe", "gldriverquery64.exe", "vulkandriverquery.exe", "vulkandriverquery64.exe", "fossilize-replay.exe", "fossilize-replay64.exe", "x64launcher.exe", "x86launcher.exe", "steamxboxutil.exe", "steamxboxutil64.exe", "secure_desktop_capture.exe", "steam_monitor.exe", "drivers.exe"]
 }
