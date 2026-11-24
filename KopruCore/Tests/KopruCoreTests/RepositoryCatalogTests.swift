@@ -84,6 +84,25 @@ struct RepositoryCatalogTests {
         #expect(catalog.recipe(id: "rockstar")?.bottle.settings.wined3dPrograms == ["Launcher.exe"])
     }
 
+    /// Game Mode yalnız oyunlarda açılsın: her tarif başlatıcının kendi süreçlerini (tarayıcı yardımcıları,
+    /// servisler) oyun dışı sayar; motor yaması bunları paketsiz açar (Tools/motor-yamalari/ntdll-game-mode.patch).
+    /// Aracı konan yardımcıların (helperProxy) hem kendisi hem `_gercek` kopyası listede olmalı.
+    @Test func everyRecipeListsItsLauncherProcesses() throws {
+        for recipe in try Self.load().recipes {
+            let names = Set((recipe.nonGamePrograms ?? []).map { $0.lowercased() })
+            #expect(!names.isEmpty, "\(recipe.id): nonGamePrograms boş")
+            for case let .helperProxy(path) in recipe.afterInstall + recipe.beforeLaunch + (recipe.whileRunning ?? []) {
+                let file = (path.components(separatedBy: "/").last ?? path).lowercased()
+                #expect(names.contains(file), "\(recipe.id): \(file) oyun dışı listede yok")
+                #expect(names.contains(file.replacingOccurrences(of: ".exe", with: "_gercek.exe")),
+                        "\(recipe.id): \(file) gerçek kopyası oyun dışı listede yok")
+            }
+        }
+        let steam = try #require(try Self.load().recipe(id: "steam"))
+        #expect(steam.nonGamePrograms?.contains("steamwebhelper.exe") == true)
+        #expect(steam.nonGamePrograms?.contains("steamwebhelper_gercek.exe") == true)
+    }
+
     /// Rockstar'ın Launcher.exe'si görünür pencere açmadığı halde Dock'a düşüyor; pencereyi Social Club
     /// yardımcısı çiziyor ve Dock'ta iki aynı simge çıkıyordu. Motor yaması
     /// (Tools/motor-yamalari/winemac-dock-gizle.patch) ShowInDock="n" olan programı Dock'a koymaz.

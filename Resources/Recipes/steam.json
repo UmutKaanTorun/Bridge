@@ -42,5 +42,6 @@
     "firstRunArguments": ["-no-cef-sandbox"]
   },
   "detect": ["drive_c/Program Files (x86)/Steam/steam.exe"],
-  "hideShortcuts": ["Steam/Steam.lnk"]
+  "hideShortcuts": ["Steam/Steam.lnk"],
+  "nonGamePrograms": ["steamwebhelper.exe", "steamwebhelper_gercek.exe", "steamservice.exe", "steamsysinfo.exe", "steamerrorreporter.exe", "steamerrorreporter64.exe", "gameoverlayui.exe", "gameoverlayui64.exe"]
 }
