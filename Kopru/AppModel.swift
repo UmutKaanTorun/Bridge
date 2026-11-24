@@ -155,6 +155,11 @@ final class AppModel {
             selection = .bottle(bottle.id)
             rescan()
         }
+        // Uçtan uca denemeler için: KOPRU_AC=<program adı> seçili bottle'daki (KOPRU_SAYFA=bottle:<ad>) programı
+        // kutucuğuna tıklanmış gibi açar: aynı ortam, aynı Dock adı, mikrofon izni Bridge'de (anti-cheat sorusu dahil).
+        if let name = ProcessInfo.processInfo.environment["KOPRU_AC"], let item = programs.first(where: { $0.name == name }) {
+            launch(item)
+        }
         // KOPRU_SAHTE_KURULUM=indiriliyor:epic | hata:epic → satırın kurulum durumlarını gösterir (gerçek kurulum yok).
         if let fake = ProcessInfo.processInfo.environment["KOPRU_SAHTE_KURULUM"]?.split(separator: ":"), fake.count == 2,
            let recipe = catalog.recipe(id: String(fake[1])) {
