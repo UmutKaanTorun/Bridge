@@ -102,7 +102,7 @@ public var advertiseAVX: Bool?
 - `ES_CONTINUOUS` varsa süreç genelinde iki kilit yönetilir:
   - `ES_DISPLAY_REQUIRED` → `kIOPMAssertionTypePreventUserIdleDisplaySleep` (yoksa alınır; yeni durumda bayrak yoksa bırakılır).
   - `ES_SYSTEM_REQUIRED` ya da `ES_AWAYMODE_REQUIRED` → `kIOPMAssertionTypePreventUserIdleSystemSleep`.
-- `ES_CONTINUOUS` yoksa ve `ES_DISPLAY_REQUIRED`/`ES_SYSTEM_REQUIRED` varsa (tek seferlik): `IOPMAssertionDeclareUserActivity(…, kIOPMUserActiveLocal, …)` boşta kalma sayacını sıfırlar.
+- `ES_CONTINUOUS` yoksa ve `ES_DISPLAY_REQUIRED` varsa (tek seferlik): `IOPMAssertionDeclareUserActivity(…, kIOPMUserActiveLocal, …)` boşta kalma sayacını sıfırlar (winemac'in girdi işleyicisi gibi tek bir kilit kimliği yeniden kullanılır). Tek seferlik `ES_SYSTEM_REQUIRED` yok sayılır: bu çağrı ekranı da uyandırırdı. Örneğin indirme sırasında bu çağrıyı yapan bir launcher, indirme boyunca ekranı açık tutardı.
 - Kilitler bir `pthread_mutex` ile korunur. Kilit adı: `"Wine: SetThreadExecutionState"`; `pmset -g assertions`'ta bu adla görünür.
 - Süreç kapanınca macOS kilitleri kendisi bırakır.
 - **Bilinen sadeleştirme:** Windows'ta `ES_CONTINUOUS` durumu iş parçacığı başına tutulur. Yama süreç geneli tutuyor: bir iş parçacığının "artık gerekmez" çağrısı ötekinin isteğini de kaldırır. Oyunlarda bu çağrı neredeyse hep tek bir iş parçacığından gelir.
@@ -164,12 +164,15 @@ public var advertiseAVX: Bool?
 
 ## 6. İş sırası
 
-1. Aşama 0 (Game Mode denemesi). Sonucu yama 7'nin yapılıp yapılmayacağını belirler.
-2. `BottleSettings` + `Engine.environment` + birim testleri.
-3. Bottle Ayarları penceresi.
-4. Yama 6 (uyku engeli) + elle deneme.
-5. Yama 7 (Aşama 0 olumluysa) + elle deneme.
-6. Gerileme denemeleri, BENIOKU ve README.
+Her ntdll derlemesi kaynak ağacındaki bütün değişiklikleri içerir. Bu yüzden motor yamaları sırayla, Swift işinden önce yapılır. Uygulama planı: `docs/superpowers/plans/2026-11-24-oyun-performansi.md`.
+
+1. Deneme programları (AVX, uyku) ve yamasız motorla temel ölçüm.
+2. Aşama 0 (Game Mode denemesi). Sonucu yama 7'nin yapılıp yapılmayacağını belirler.
+3. Yama 7 (Aşama 0 olumluysa).
+4. Yama 6 (uyku engeli).
+5. `BottleSettings` + `Engine.environment` + birim testleri.
+6. Bottle Ayarları penceresi.
+7. Uçtan uca deneme, gerileme, README.
 
 ## 7. Kapsam dışı
 
