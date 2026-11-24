@@ -28,7 +28,8 @@
     { "action": "registry", "key": "HKCU\\Software\\Wine\\DllOverrides", "name": "gameoverlayrenderer64", "value": "" }
   ],
   "beforeLaunch": [
-    { "action": "steamWebHelperProxy" }
+    { "action": "steamWebHelperProxy" },
+    { "action": "registry", "key": "HKCU\\Software\\Wine\\AppDefaults\\steam.exe\\Mac Driver", "name": "ShowInDock", "value": "n" }
   ],
   "whileRunning": [
     { "action": "steamWebHelperProxy" }

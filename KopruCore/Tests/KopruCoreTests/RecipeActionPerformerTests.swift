@@ -23,6 +23,25 @@ struct RecipeActionPerformerTests {
         #expect(td.recordedLines().first?.hasPrefix("wine reg add HKCU\\Software\\Wine\\DllOverrides /v gameoverlayrenderer64 /t REG_SZ /d") == true)
     }
 
+    static let dockKey = "HKCU\\Software\\Wine\\AppDefaults\\steam.exe\\Mac Driver"
+
+    /// beforeLaunch'taki kayıt eylemi her açılışa Wine başlatma süresi eklemesin: değer user.reg'de varsa reg çalışmaz.
+    @Test func registryActionSkipsValueAlreadyInUserReg() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        try td.file("AppSupport/Bottles/Steam/user.reg", WineRegistryFileTests.userReg)
+        try await performer.perform([.registry(key: Self.dockKey, name: "ShowInDock", value: "n")], recipe: .fixture(), bottle: bottle)
+        #expect(td.recordedLines().isEmpty)
+    }
+
+    @Test func registryActionRunsWhenUserRegHoldsAnotherValue() async throws {
+        let td = try TempDir()
+        let (performer, bottle) = try setUp(td)
+        try td.file("AppSupport/Bottles/Steam/user.reg", WineRegistryFileTests.userReg)
+        try await performer.perform([.registry(key: Self.dockKey, name: "ShowInDock", value: "y")], recipe: .fixture(), bottle: bottle)
+        #expect(td.recordedLines().first?.hasPrefix("wine reg add \(Self.dockKey) /v ShowInDock") == true)
+    }
+
     @Test func registryFailureThrows() async throws {
         let td = try TempDir()
         let (performer, bottle) = try setUp(td, ["CIKIS": "1"])
