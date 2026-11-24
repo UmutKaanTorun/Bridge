@@ -61,12 +61,15 @@ struct Pixels {
 
     /// Program kur sayfasındaki arama alanında imlecin (vurgu mavisi dikey çizgi) piksel sayısı.
     /// Alan sağa yaslı; bölge pencerenin sağ kenarına ve üstüne göre (2x piksel).
+    /// İmleç yanıp sönerken saydamlaşır, rengi alanın gri zeminine karışır. Gri zeminde ve yazıda mavi ile
+    /// kırmızı eşittir; vurgu mavisi (0,122,255) α oranında karışınca b − r ≈ 255·α olur, açık ve koyu temada.
+    /// Yarı saydam imleç (α ≈ 0,4) de sayılır, yalnızca neredeyse görünmeyeni (α < 0,16) sayılmaz.
     var caretPixels: Int {
         var count = 0
         for y in 140..<min(240, height) {
             for x in max(0, width - 700)..<max(0, width - 480) {
-                let (r, g, b) = rgb(x, y)
-                if b > 200, r < 110, g > 70, g < 180 { count += 1 }
+                let (r, _, b) = rgb(x, y)
+                if b - r > 40 { count += 1 }
             }
         }
         return count
