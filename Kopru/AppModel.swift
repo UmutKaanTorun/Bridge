@@ -606,8 +606,8 @@ final class AppModel {
                 if updated.info.name != name.trimmingCharacters(in: .whitespacesAndNewlines) {
                     updated = try store.rename(updated, to: name)
                 }
-                // Bir bottle'daki bütün süreçler aynı MSync ayarıyla başlamalı; değişince bottle durdurulur.
-                if updated.info.settings.msync != settings.msync {
+                // Bir bottle'daki bütün süreçler aynı MSync ve AVX ayarıyla başlamalı; değişince bottle durdurulur.
+                if settings.requiresRestart(comparedTo: updated.info.settings) {
                     await runner.stop(updated, shutdown: shutdown)
                 }
                 updated.info.settings = settings
