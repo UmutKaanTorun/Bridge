@@ -113,6 +113,16 @@ struct RepositoryCatalogTests {
         #expect(recipe.afterInstall.contains(action))
     }
 
+    /// steam.exe'nin görünür penceresi yok, Steam penceresini tarayıcı yardımcısı (steamwebhelper) çiziyor; ikisi de
+    /// Dock'a düşünce iki aynı Steam simgesi çıkıyordu (oyunla birlikte üç). Kurulu bottle'lara da ulaşsın diye
+    /// beforeLaunch'ta: değer yazılıysa Wine başlatılmaz (`WineRegistryFile`).
+    @Test func steamClientStaysOutOfDock() throws {
+        let recipe = try #require(try Self.load().recipe(id: "steam"))
+        let action = RecipeAction.registry(key: "HKCU\\Software\\Wine\\AppDefaults\\steam.exe\\Mac Driver",
+                                           name: "ShowInDock", value: "n")
+        #expect(recipe.beforeLaunch.contains(action))
+    }
+
     /// Her `helperProxy` eyleminin aracısı tarif dosyalarında, yardımcıyla aynı adla ve onu tanıtan işaretle var
     /// (Tools/cef-araci/derle.sh).
     @Test func helperProxiesAreBuilt() throws {

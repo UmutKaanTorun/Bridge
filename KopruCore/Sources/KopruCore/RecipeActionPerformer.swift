@@ -34,6 +34,10 @@ public struct RecipeActionPerformer: Sendable {
         for action in actions {
             switch action {
             case let .registry(key, name, value):
+                // beforeLaunch'taki kayıt eylemi her açılışa Wine'ın açılış süresini (1-3 sn) eklemesin.
+                if WineRegistryFile.containsUserString(key: key, name: name, value: value, inBottleAt: bottle.url) {
+                    continue
+                }
                 let result = try await runner.run(.builtin("reg", arguments: Self.registryArguments(key: key, name: name, value: value)),
                                                   in: bottle)
                 guard result.exitCode == 0 else {

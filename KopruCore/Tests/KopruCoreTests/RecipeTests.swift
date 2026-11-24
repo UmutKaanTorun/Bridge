@@ -18,7 +18,9 @@ struct RecipeTests {
         #expect(recipe.installer.sha256 == nil)
         #expect(recipe.installer.arguments == ["/S"])
         #expect(recipe.afterInstall == [.registry(key: "HKCU\\Software\\Wine\\DllOverrides", name: "gameoverlayrenderer64", value: "")])
-        #expect(recipe.beforeLaunch == [.steamWebHelperProxy])
+        #expect(recipe.beforeLaunch == [.steamWebHelperProxy,
+                                        .registry(key: "HKCU\\Software\\Wine\\AppDefaults\\steam.exe\\Mac Driver",
+                                                  name: "ShowInDock", value: "n")])
         #expect(recipe.launch.windowsPath == "C:\\Program Files (x86)\\Steam\\steam.exe")
         #expect(recipe.launch.arguments == ["-noverifyfiles", "-no-cef-sandbox"])
         #expect(recipe.launch.shutdownArguments == ["-shutdown"])
