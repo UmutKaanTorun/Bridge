@@ -41,6 +41,13 @@ public struct Engine: Sendable, Equatable {
     /// DXMT yerine wined3d ile çizer. Yama: Tools/motor-yamalari/ntdll-program-basina-wined3d.patch
     public static let wined3dProgramsVariable = "KOPRU_WINED3D_EXE"
 
+    /// DXMT bu değişken "1" iken swapchain'i MetalFX uzamsal ölçekleyiciyle kurar (ölçek varsayılanı 2×,
+    /// `d3d11.metalSpatialUpscaleFactor`). Aygıt desteklemiyorsa DXMT normal swapchain'e döner.
+    public static let metalFXVariable = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
+
+    /// Rosetta bu değişken "1" iken AVX ve AVX2'yi CPUID'de bildirir (varsayılan: bildirmez).
+    public static let advertiseAVXVariable = "ROSETTA_ADVERTISE_AVX"
+
     public static func isValid(_ root: URL) -> Bool {
         FileManager.default.isExecutableFile(atPath: root.appendingPathComponent("bin/wine").path)
     }
@@ -82,6 +89,8 @@ public struct Engine: Sendable, Equatable {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty && !$0.contains(",") }
         env[Self.wined3dProgramsVariable] = wined3d.isEmpty ? nil : wined3d.joined(separator: ",")
+        env[Self.metalFXVariable] = settings.metalFXUpscale == true ? "1" : nil
+        env[Self.advertiseAVXVariable] = settings.advertiseAVX == true ? "1" : nil
         return env
     }
 }

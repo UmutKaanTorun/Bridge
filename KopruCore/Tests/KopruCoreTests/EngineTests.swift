@@ -87,4 +87,26 @@ struct EngineTests {
             #expect(env[Engine.wined3dProgramsVariable] == nil)
         }
     }
+
+    @Test func metalFXAndAVXBecomeVariables() {
+        let engine = Engine(root: URL(fileURLWithPath: "/Motor", isDirectory: true))
+        let env = engine.environment(prefix: URL(fileURLWithPath: "/B"),
+                                     settings: BottleSettings(metalFXUpscale: true, advertiseAVX: true),
+                                     base: [:])
+        #expect(Engine.metalFXVariable == "DXMT_METALFX_SPATIAL_SWAPCHAIN")
+        #expect(Engine.advertiseAVXVariable == "ROSETTA_ADVERTISE_AVX")
+        #expect(env[Engine.metalFXVariable] == "1")
+        #expect(env[Engine.advertiseAVXVariable] == "1")
+    }
+
+    @Test func metalFXAndAVXOffClearVariables() {
+        let engine = Engine(root: URL(fileURLWithPath: "/Motor", isDirectory: true))
+        // Bridge'in kendi ortamında olsalar bile kapalı ayar Wine'a geçirmez.
+        let base = [Engine.metalFXVariable: "1", Engine.advertiseAVXVariable: "1"]
+        for settings in [BottleSettings(), BottleSettings(metalFXUpscale: false, advertiseAVX: false)] {
+            let env = engine.environment(prefix: URL(fileURLWithPath: "/B"), settings: settings, base: base)
+            #expect(env[Engine.metalFXVariable] == nil)
+            #expect(env[Engine.advertiseAVXVariable] == nil)
+        }
+    }
 }

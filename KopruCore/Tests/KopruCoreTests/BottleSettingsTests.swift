@@ -3,39 +3,29 @@ import Testing
 @testable import KopruCore
 
 struct BottleSettingsTests {
-    @Test func settingsRoundTrip() throws {
-        let settings = BottleSettings(msync: false, fpsHud: true)
-        let data = try JSONEncoder().encode(settings)
-        #expect(try JSONDecoder().decode(BottleSettings.self, from: data) == settings)
-    }
-
-    @Test func defaultSettings() {
-        #expect(BottleSettings.default == BottleSettings(msync: true, fpsHud: false))
-        #expect(BottleSettings.default.wined3dPrograms == nil)
-    }
-
-    @Test func wined3dProgramsRoundTrip() throws {
-        let settings = BottleSettings(msync: true, fpsHud: false, wined3dPrograms: ["Launcher.exe"])
-        let data = try JSONEncoder().encode(settings)
-        #expect(try JSONDecoder().decode(BottleSettings.self, from: data) == settings)
-    }
-
-    @Test func settingsWithoutWined3dProgramsStillDecode() throws {
-        // Eski kopru.json dosyalarında bu alan yok.
-        let json = #"{"msync":true,"fpsHud":false}"#
+    @Test func oldKopruJSONDecodesWithoutPerformanceFields() throws {
+        // Bu Mac'teki Steam bottle'ının kopru.json'undaki ayarlar; virtualDesktop artık yok sayılıyor.
+        let json = #"{"fpsHud":false,"msync":true,"virtualDesktop":{"mode":"auto"}}"#
         let settings = try JSONDecoder().decode(BottleSettings.self, from: Data(json.utf8))
-        #expect(settings == .default)
-        #expect(settings.wined3dPrograms == nil)
+        #expect(settings == BottleSettings(msync: true, fpsHud: false))
+        #expect(settings.metalFXUpscale == nil)
+        #expect(settings.advertiseAVX == nil)
     }
 
-    /// Sanal masaüstü kaldırıldı: Wine'ın Mac sürücüsünde yok (explorer /desktop tek pencere açmıyor, boyut da
-    /// uygulanmıyor), yalnız yan etkileri kalıyordu. Eski kopru.json'lardaki alan okunurken yok sayılır.
-    @Test func legacyVirtualDesktopIsIgnored() throws {
-        for mode in [#"{"mode":"auto"}"#, #"{"mode":"off"}"#, #"{"mode":"fixed","width":1280,"height":800}"#] {
-            let json = #"{"msync":true,"virtualDesktop":\#(mode),"fpsHud":false}"#
-            #expect(try JSONDecoder().decode(BottleSettings.self, from: Data(json.utf8)) == .default)
-        }
-        let encoded = String(decoding: try JSONEncoder().encode(BottleSettings.default), as: UTF8.self)
-        #expect(!encoded.contains("virtualDesktop"))
+    @Test func performanceFieldsRoundTrip() throws {
+        let settings = BottleSettings(metalFXUpscale: true, advertiseAVX: false)
+        let decoded = try JSONDecoder().decode(BottleSettings.self, from: JSONEncoder().encode(settings))
+        #expect(decoded == settings)
+        #expect(decoded.metalFXUpscale == true)
+        #expect(decoded.advertiseAVX == false)
+    }
+
+    @Test func restartIsRequiredOnlyForMSyncAndAVX() {
+        let old = BottleSettings()
+        #expect(BottleSettings(msync: false).requiresRestart(comparedTo: old))
+        #expect(BottleSettings(advertiseAVX: true).requiresRestart(comparedTo: old))
+        // nil ile false aynı: eski kopru.json'u kaydetmek bottle'ı durdurmaz.
+        #expect(!BottleSettings(advertiseAVX: false).requiresRestart(comparedTo: old))
+        #expect(!BottleSettings(fpsHud: true, metalFXUpscale: true).requiresRestart(comparedTo: old))
     }
 }
