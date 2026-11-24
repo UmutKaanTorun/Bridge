@@ -37,6 +37,8 @@
 - `/usr/libexec/rosetta/runtime` içinde `ADVERTISE_AVX` dizgisi var.
 - Deneme: x86_64 için derlenen küçük bir CPUID programı varsayılanla `AVX=0 AVX2=0`, `ROSETTA_ADVERTISE_AVX=1` ile `AVX=1 AVX2=1` yazdı (macOS 26.6.2, M3).
 - Rosetta bunu varsayılan olarak kapalı tutuyor. Çevrilmiş AVX kodu bazı oyunlarda SSE yolundan yavaş olabilir; AVX isteyen oyunlar ise onsuz açılmıyor. Bu yüzden ayar varsayılan olarak kapalı.
+- Wine içinden denendi (`Tools/performans-denemeleri/avx.c`, 2026-11-24). Değişken Windows programına ulaşıyor: CPUID `AVX=1 AVX2=1`.
+- **Bottle'daki bütün süreçler aynı değerle başlamalı.** Wine `IsProcessorFeaturePresent` bilgisini wineserver açılırken bir kez dolduruyor. Wineserver bayraksız başlamışsa sonradan bayrakla açılan program CPUID'de AVX görür, ama `IsProcessorFeaturePresent(PF_AVX…)` 0 döner. Temiz bir wineserver'la ikisi de 1. Bu yüzden AVX ayarı değişince bottle, MSync'te olduğu gibi durdurulur.
 
 ### Uyku engeli
 
@@ -84,13 +86,15 @@ public var advertiseAVX: Bool?
 - Kapalıyken silmek `MTL_HUD_ENABLED` ve `KOPRU_WINED3D_EXE` ile aynı kural: Bridge'in kendi ortamından sızmasın.
 - Değişkenler sabit adlarla `Engine`'e eklenir: `metalFXVariable`, `advertiseAVXVariable`.
 - Bottle'ın bütün Wine çalıştırmaları (kurulum, açılış, `reg`, `wineserver`) aynı değeri alır. Steam'den açılan oyunlar değişkeni Steam'den miras alır.
+- AVX'te süreçler arası tutarlılık önemli (wineserver bilgiyi bir kez dolduruyor). Bu yüzden ayar değişince bottle durdurulur (3.3).
 
 ### 3.3 Uygulama: Bottle Ayarları penceresi
 
 - `Form`'a **"Performans"** bölümü (`Section`) eklenir:
   - `Toggle("Keskin görüntü (MetalFX)")`, altında açıklama: "DirectX 11 oyunlarını MetalFX ile Retina çözünürlüğe büyütür. Retina olmayan ekranda kapalı bırakın."
   - `Toggle("AVX desteği")`, altında açıklama: "AVX isteyen oyunlar için. Bazı oyunlar yavaşlayabilir."
-  - Bu ikisinden biri kayıtlı değerden farklıysa: "Açık programlar yeniden açılınca geçerli olur." (MSync'teki gibi programlar kapatılmaz; bu değerlerin süreçler arasında aynı olması gerekmiyor.)
+  - MetalFX kayıtlı değerden farklıysa: "Açık programlar yeniden açılınca geçerli olur." Programlar kapatılmaz; her swapchain değeri kendi sürecinden okur.
+  - AVX kayıtlı değerden farklıysa, MSync'teki uyarının aynısı: "Kaydedince bottle'daki açık programlar kapatılacak." `AppModel.update` bottle'ı MSync ya da AVX değişince durdurur (1. bölüm, "AVX").
 - MSync ve FPS göstergesi bulundukları yerde kalır. Pencere yüksekliği yeni bölüme göre büyütülür.
 - Kaydetme, pencerede olmayan alanları (ör. `wined3dPrograms`) yine korur.
 

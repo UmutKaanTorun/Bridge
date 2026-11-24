@@ -201,7 +201,7 @@ ROSETTA_ADVERTISE_AVX=1 Tools/performans-denemeleri/calistir.sh cikti/avx.exe
 
 Beklenen: ilkinde `CPUID AVX=0 AVX2=0`, ikincisinde `CPUID AVX=1 AVX2=1`. Bu sonuç, değişkenin Wine'dan geçip Windows programına ulaştığını gösterir.
 
-Wine'ın `IsProcessorFeaturePresent` satırını iki durum için de not et. CPUID 1 iken bu satır 0 kalabilir; Wine ayrıca işletim sistemi desteğine (XSAVE) bakıyor. Bu durumda spec'in "AVX" bölümüne bir satır eklenir: oyunların çoğu CPUID'ye baktığı için ayar yine işe yarar. Bu satır Görev 7'de spec'le birlikte commit edilir.
+Wine'ın `IsProcessorFeaturePresent` satırı ayar açıkken 1 olmalı, ama yalnız wineserver bayrakla başladıysa. Önceki çalıştırmanın sunucusu açıksa 0 görünür. Bu yüzden ikinci komuttan önce `WINEPREFIX=~/WineBottles/kopru-performans ~/WineEngines/WineCX26.3.0-DXMT0.80/bin/wineserver -k` çalıştırılır. (2026-11-24'te bulundu; spec'in "AVX" bölümünde.)
 
 - [ ] **Adım 8: Uyku temel ölçümü (yamasız motor: kilit beklenmez)**
 
@@ -750,6 +750,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `BottleSettings.metalFXUpscale: Bool?`, `BottleSettings.advertiseAVX: Bool?` (`nil` = kapalı).
   - `BottleSettings.init(msync: Bool = true, fpsHud: Bool = false, wined3dPrograms: [String]? = nil, metalFXUpscale: Bool? = nil, advertiseAVX: Bool? = nil)`.
   - `Engine.metalFXVariable == "DXMT_METALFX_SPATIAL_SWAPCHAIN"`, `Engine.advertiseAVXVariable == "ROSETTA_ADVERTISE_AVX"`.
+  - `BottleSettings.requiresRestart(comparedTo old: BottleSettings) -> Bool`: MSync ya da AVX (nil = false) farklıysa `true`. MetalFX ve FPS göstergesi bottle'ı durdurmaz.
 
 - [ ] **Adım 1: Başarısız testleri yaz**
 
@@ -776,6 +777,15 @@ struct BottleSettingsTests {
         #expect(decoded == settings)
         #expect(decoded.metalFXUpscale == true)
         #expect(decoded.advertiseAVX == false)
+    }
+
+    @Test func restartIsRequiredOnlyForMSyncAndAVX() {
+        let old = BottleSettings()
+        #expect(BottleSettings(msync: false).requiresRestart(comparedTo: old))
+        #expect(BottleSettings(advertiseAVX: true).requiresRestart(comparedTo: old))
+        // nil ile false aynı: eski kopru.json'u kaydetmek bottle'ı durdurmaz.
+        #expect(!BottleSettings(advertiseAVX: false).requiresRestart(comparedTo: old))
+        #expect(!BottleSettings(fpsHud: true, metalFXUpscale: true).requiresRestart(comparedTo: old))
     }
 }
 ```
@@ -812,7 +822,7 @@ struct BottleSettingsTests {
 swift test --package-path KopruCore --filter "BottleSettingsTests|EngineTests" 2>&1 | tail -15
 ```
 
-Beklenen: derleme hatası; `extra arguments at positions …` ya da `has no member 'metalFXVariable'`.
+Beklenen: derleme hatası; `extra arguments at positions …`, `has no member 'metalFXVariable'` ya da `has no member 'requiresRestart'`.
 
 - [ ] **Adım 3: `BottleSettings`'e alanları ekle**
 
@@ -847,6 +857,13 @@ public struct BottleSettings: Codable, Hashable, Sendable {
     }
 
     public static let `default` = BottleSettings()
+
+    /// Bu ayarlar bottle'daki bütün süreçlerde aynı olmalı: MSync (wineserver) ve AVX (Wine işlemci bilgisini
+    /// wineserver açılırken bir kez doldurur; sonradan bayrakla açılan program CPUID'de AVX görür ama
+    /// IsProcessorFeaturePresent 0 döner). Biri değişirse açık bottle durdurulur.
+    public func requiresRestart(comparedTo old: BottleSettings) -> Bool {
+        msync != old.msync || (advertiseAVX ?? false) != (old.advertiseAVX ?? false)
+    }
 }
 ```
 
@@ -901,10 +918,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Files:**
 - Modify: `Kopru/Views/BottleSettingsSheet.swift`
+- Modify: `Kopru/AppModel.swift` (`update(_:name:settings:)`)
 - Modify: `Kopru/Localizable.xcstrings` (yalnız derleme değiştirirse)
 
 **Interfaces:**
-- Consumes: `BottleSettings.metalFXUpscale`, `BottleSettings.advertiseAVX` (Görev 5).
+- Consumes: `BottleSettings.metalFXUpscale`, `BottleSettings.advertiseAVX`, `BottleSettings.requiresRestart(comparedTo:)` (Görev 5).
 - Produces: Kaydedince `kopru.json`'da `"metalFXUpscale"` ve `"advertiseAVX"` alanları (`true`/`false`).
 
 - [ ] **Adım 1: Pencereyi güncelle**
@@ -947,11 +965,7 @@ struct BottleSettingsSheet: View {
         return settings
     }
 
-    /// MetalFX ve AVX ortam değişkeniyle geçer: açık programlar eski değerle sürer, programları kapatmak gerekmez.
-    private var performanceChanged: Bool {
-        let saved = bottle.info.settings
-        return metalFX != (saved.metalFXUpscale ?? false) || avx != (saved.advertiseAVX ?? false)
-    }
+    private var saved: BottleSettings { bottle.info.settings }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -960,7 +974,7 @@ struct BottleSettingsSheet: View {
                 Section {
                     TextField("Ad", text: $name)
                     Toggle("MSync (oyunlarda daha akıcı)", isOn: $msync)
-                    if msync != bottle.info.settings.msync {
+                    if msync != saved.msync {
                         Text("Kaydedince bottle'daki açık programlar kapatılacak.")
                             .font(.caption)
                             .foregroundStyle(.orange)
@@ -972,14 +986,21 @@ struct BottleSettingsSheet: View {
                         Text("Keskin görüntü (MetalFX)")
                         Text("DirectX 11 oyunlarını MetalFX ile Retina çözünürlüğe büyütür. Retina olmayan ekranda kapalı bırakın.")
                     }
+                    // MetalFX'i her swapchain kendi sürecinden okur: açık programlar eski değerle sürer.
+                    if metalFX != (saved.metalFXUpscale ?? false) {
+                        Text("Açık programlar yeniden açılınca geçerli olur.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Toggle(isOn: $avx) {
                         Text("AVX desteği")
                         Text("AVX isteyen oyunlar için. Bazı oyunlar yavaşlayabilir.")
                     }
-                    if performanceChanged {
-                        Text("Açık programlar yeniden açılınca geçerli olur.")
+                    // AVX bütün süreçlerde aynı olmalı (BottleSettings.requiresRestart); AppModel.update bottle'ı durdurur.
+                    if avx != (saved.advertiseAVX ?? false) {
+                        Text("Kaydedince bottle'daki açık programlar kapatılacak.")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.orange)
                     }
                 }
             }
@@ -1016,9 +1037,27 @@ struct BottleSettingsSheet: View {
 }
 ```
 
-`AppModel.update` değişmez: yalnız MSync değişince bottle'ı durdurur.
+- [ ] **Adım 2: `AppModel.update` AVX değişince de bottle'ı durdursun**
 
-- [ ] **Adım 2: Derle**
+`Kopru/AppModel.swift` içinde `update(_:name:settings:)` fonksiyonundaki şu satırları:
+
+```swift
+                // Bir bottle'daki bütün süreçler aynı MSync ayarıyla başlamalı; değişince bottle durdurulur.
+                if updated.info.settings.msync != settings.msync {
+                    await runner.stop(updated, shutdown: shutdown)
+                }
+```
+
+şununla değiştir:
+
+```swift
+                // Bir bottle'daki bütün süreçler aynı MSync ve AVX ayarıyla başlamalı; değişince bottle durdurulur.
+                if settings.requiresRestart(comparedTo: updated.info.settings) {
+                    await runner.stop(updated, shutdown: shutdown)
+                }
+```
+
+- [ ] **Adım 3: Derle**
 
 ```bash
 xcodebuild -project Kopru.xcodeproj -scheme Kopru -configuration Debug -derivedDataPath build build 2>&1 | grep -E 'error:|BUILD' | tail -5
@@ -1026,7 +1065,7 @@ xcodebuild -project Kopru.xcodeproj -scheme Kopru -configuration Debug -derivedD
 
 Beklenen: `** BUILD SUCCEEDED **`.
 
-- [ ] **Adım 3 (kullanıcıyla): Pencereyi gör ve kaydet**
+- [ ] **Adım 4 (kullanıcıyla): Pencereyi gör ve kaydet**
 
 ```bash
 open build/Build/Products/Debug/Bridge.app
@@ -1034,8 +1073,8 @@ open build/Build/Products/Debug/Bridge.app
 
 Kullanıcıdan Steam bottle'ının ayarlarını açmasını iste ve şunları denetlet:
 - "Performans" bölümünde iki anahtar ve açıklamaları görünüyor mu?
-- Pencere kesilmeden sığıyor mu? Sığmıyorsa `.frame(width: 520, height: 600)` yüksekliği büyütülür ve 2. adım yinelenir.
-- Bir anahtarı değiştirince "Açık programlar yeniden açılınca geçerli olur." çıkıyor mu?
+- Pencere kesilmeden sığıyor mu? Sığmıyorsa `.frame(width: 520, height: 600)` yüksekliği büyütülür ve 3. adım yinelenir.
+- MetalFX değişince gri "Açık programlar yeniden açılınca geçerli olur.", AVX değişince turuncu "Kaydedince bottle'daki açık programlar kapatılacak." çıkıyor mu?
 
 Sonra kullanıcı iki anahtarı da açıp Kaydet'e bassın:
 
@@ -1045,7 +1084,7 @@ grep -E 'metalFXUpscale|advertiseAVX' ~/Library/Application\ Support/Kopru/Bottl
 
 Beklenen: `"advertiseAVX" : true` ve `"metalFXUpscale" : true`.
 
-- [ ] **Adım 4: Ortamın Wine'a geçtiğini doğrula**
+- [ ] **Adım 5: Ortamın Wine'a geçtiğini doğrula**
 
 Kullanıcı Steam'i Bridge'den açsın, sonra:
 
@@ -1055,7 +1094,7 @@ ps eww -p "$(pgrep -f 'steam.exe' | head -1)" | tr ' ' '\n' | grep -E '^(DXMT_ME
 
 Beklenen: `DXMT_METALFX_SPATIAL_SWAPCHAIN=1` ve `ROSETTA_ADVERTISE_AVX=1`. (`ps` ortamı göstermezse günlük yeterli değildir; bu durumda Görev 7'deki HUD denetimi kanıt sayılır.)
 
-- [ ] **Adım 5: Metin kataloğunu denetle ve commit et**
+- [ ] **Adım 6: Metin kataloğunu denetle ve commit et**
 
 ```bash
 git status --short Kopru/
@@ -1064,7 +1103,7 @@ git status --short Kopru/
 `Kopru/Localizable.xcstrings` değiştiyse o da commit'e girer:
 
 ```bash
-git add Kopru/Views/BottleSettingsSheet.swift
+git add Kopru/Views/BottleSettingsSheet.swift Kopru/AppModel.swift
 git add Kopru/Localizable.xcstrings 2>/dev/null; git commit -m "Bottle Ayarları: Performans bölümü (MetalFX, AVX)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -1141,11 +1180,7 @@ Steam bottle'ı kullanıcının kendi bottle'ı. Kullanıcı açık kalmasını 
 - **Durum:** Umut tasarımı onayladı (2026-11-24); uygulandı. Game Mode: Aşama 0 kararı [A|B|C] (3.5'in sonu). Geliştirme motoru güncel; Release paketi bir sonraki sürümle yenilenir.
 ```
 
-Görev 1 Adım 7'de `IsProcessorFeaturePresent` 0 kaldıysa, spec'in "### AVX" bölümünün son maddesinin arkasına şunu ekle:
-
-```markdown
-- Wine'ın `IsProcessorFeaturePresent(PF_AVX…)` sonucu ayar açıkken de 0 (Wine ayrıca XSAVE desteğine bakıyor). Oyunların çoğu doğrudan CPUID'ye baktığı için ayar yine işe yarıyor.
-```
+(Görev 1'in AVX bulgusu, yani wineserver'ın bilgiyi bir kez doldurması, spec'e Görev 1 sırasında yazıldı.)
 
 - [ ] **Adım 7: Commit**
 
