@@ -28,6 +28,22 @@ struct RecipeTests {
         #expect(recipe.launch.firstRunArguments == ["-no-cef-sandbox"])
     }
 
+    @Test func nonGameProgramsBecomeEngineVariable() throws {
+        var recipe = try JSONDecoder().decode(Recipe.self, from: Data(contentsOf: Self.steamJSON))
+        recipe.nonGamePrograms = ["steamwebhelper.exe", " STEAM.EXE ", "", "a,b.exe"]
+        // Başlatıcı ve kurulum dosyası listede olmasa da eklenir; büyük/küçük harf farkı tekrar sayılmaz,
+        // virgüllü ya da boş adlar atlanır (motorda ayırıcı virgül).
+        #expect(recipe.wineEnvironment == [Engine.nonGameProgramsVariable: "steamwebhelper.exe,STEAM.EXE,SteamSetup.exe"])
+    }
+
+    @Test func nonGameProgramsAreOptional() throws {
+        var recipe = try JSONDecoder().decode(Recipe.self, from: Data(contentsOf: Self.steamJSON))
+        recipe.nonGamePrograms = nil
+        let decoded = try JSONDecoder().decode(Recipe.self, from: JSONEncoder().encode(recipe))
+        #expect(decoded.nonGamePrograms == nil)
+        #expect(decoded.wineEnvironment == [Engine.nonGameProgramsVariable: "steam.exe,SteamSetup.exe"])
+    }
+
     @Test func whileRunningIsOptional() throws {
         let data = try JSONEncoder().encode(Recipe.fixture())
         #expect(!String(decoding: data, as: UTF8.self).contains("whileRunning"))

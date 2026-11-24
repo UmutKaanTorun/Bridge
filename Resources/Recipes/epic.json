@@ -59,5 +59,6 @@
   "detect": [
     "drive_c/Program Files/Epic Games/Launcher/Portal/Binaries/Win64/EpicGamesLauncher.exe"
   ],
-  "hideShortcuts": []
+  "hideShortcuts": [],
+  "nonGamePrograms": ["EpicWebHelper.exe", "EpicOnlineServicesHost.exe", "EpicOnlineServicesUserHelper.exe", "EOSOverlayRenderer-Win64-Shipping.exe", "EOSOverlayRenderer-Win64-Shipping_gercek.exe", "EOSOverlayRenderer-Win32-Shipping.exe", "EOSOverlayRenderer-Win32-Shipping_gercek.exe", "CrashReportClient.exe", "UnrealCEFSubProcess.exe"]
 }

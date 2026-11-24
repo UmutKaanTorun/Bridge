@@ -60,5 +60,6 @@
   "detect": [
     "drive_c/Program Files/GOG Galaxy/GalaxyClient.exe"
   ],
-  "hideShortcuts": []
+  "hideShortcuts": [],
+  "nonGamePrograms": ["GalaxyClient Helper.exe", "GalaxyCommunication.exe", "GalaxyClientService.exe", "GOG Galaxy Notifications Renderer.exe", "GalaxyUpdater.exe", "QtWebEngineProcess.exe", "CrashReportClient.exe"]
 }

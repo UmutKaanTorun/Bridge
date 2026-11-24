@@ -327,7 +327,8 @@ final class AppModel {
                     try await actions.perform(recipe.beforeLaunch, recipe: recipe, bottle: bottle)
                     startGuard(recipe: recipe, bottle: bottle, runner: runner, actions: actions)
                 }
-                let result = try await runner.run(target, in: bottle, appName: name)
+                let result = try await runner.run(target, in: bottle, appName: name,
+                                                  extraEnvironment: recipe?.wineEnvironment ?? [:])
                 if result.exitCode != 0 && result.duration < 5 {
                     alert = AppAlert(title: "\(name) hemen kapandı",
                                      message: "Program açıldıktan hemen sonra kapandı (çıkış kodu \(result.exitCode)). Ayrıntılar günlük dosyasında.",
@@ -485,7 +486,8 @@ final class AppModel {
                 guard let bottle else { return }
                 apply(.started(.installing))
                 let result = try await runner.run(.unixFile(file, arguments: []), in: bottle,
-                                                  appName: file.deletingPathExtension().lastPathComponent)
+                                                  appName: file.deletingPathExtension().lastPathComponent,
+                                                  extraEnvironment: recipe(for: bottle)?.wineEnvironment ?? [:])
                 guard result.exitCode == 0 else {
                     throw InstallFailure(step: .installing, bottle: bottle,
                                          underlying: InstallError.installerFailed(exitCode: result.exitCode))

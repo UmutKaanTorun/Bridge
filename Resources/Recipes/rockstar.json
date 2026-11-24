@@ -76,5 +76,6 @@
   "detect": [
     "drive_c/Program Files/Rockstar Games/Launcher/Launcher.exe"
   ],
-  "hideShortcuts": []
+  "hideShortcuts": [],
+  "nonGamePrograms": ["LauncherPatcher.exe", "RockstarService.exe", "RockstarErrorHandler.exe", "SocialClubHelper.exe", "SocialClubHelper_gercek.exe"]
 }

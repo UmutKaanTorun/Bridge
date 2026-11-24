@@ -46,5 +46,6 @@
   "detect": [
     "drive_c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/UbisoftConnect.exe"
   ],
-  "hideShortcuts": []
+  "hideShortcuts": [],
+  "nonGamePrograms": ["upc.exe", "UplayWebCore.exe", "UplayService.exe", "UplayCrashReporter.exe", "UbisoftGameLauncher.exe", "UbisoftGameLauncher64.exe"]
 }

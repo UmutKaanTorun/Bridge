@@ -56,5 +56,6 @@
   "detect": [
     "drive_c/Program Files (x86)/Battle.net/Battle.net Launcher.exe"
   ],
-  "hideShortcuts": []
+  "hideShortcuts": [],
+  "nonGamePrograms": ["Agent.exe", "Battle.net Launcher.exe", "Battle.net Helper.exe", "BlizzardError.exe", "QtWebEngineProcess.exe", "CrashReporter.exe"]
 }

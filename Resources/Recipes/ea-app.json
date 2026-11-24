@@ -51,5 +51,6 @@
   "detect": [
     "drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop/EADesktop.exe"
   ],
-  "hideShortcuts": ["EA/EA.lnk"]
+  "hideShortcuts": ["EA/EA.lnk"],
+  "nonGamePrograms": ["EABackgroundService.exe", "EACefSubProcess.exe", "EALaunchHelper.exe", "EALocalHostSvc.exe", "EAConnect_microsoft.exe", "EACrashReporter.exe", "EAUpdater.exe", "Link2EA.exe"]
 }

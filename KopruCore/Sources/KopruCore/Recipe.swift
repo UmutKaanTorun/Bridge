@@ -219,6 +219,10 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     public var detect: [String]
     /// Tarifin kendi başlatıcısı varken gizlenen Başlat menüsü kısayolları (Programs'a göre göreli).
     public var hideShortcuts: [String]
+    /// Oyun sayılmayan exe adları: başlatıcının tarayıcı yardımcıları, servisleri, hata bildiricileri.
+    /// Game Mode yalnız öteki programlarda (oyunlarda) açılır; bkz. `Engine.nonGameProgramsVariable`.
+    /// Başlatıcının kendisi ve kurulum dosyası `wineEnvironment`'a ayrıca eklenir. Eski tariflerde yoktur.
+    public var nonGamePrograms: [String]?
     // Kur sayfası alanları; hepsi isteğe bağlı, eski tarifler bunlarsız da çözülür.
     public var publisher: String?
     /// Neyin çalışıp neyin çalışmadığını anlatan cümle.
@@ -232,5 +236,16 @@ public struct Recipe: Codable, Hashable, Sendable, Identifiable {
     /// doluysa her yol bottle'a göre var olmalı. Programın Windows'ta açtığı bağlantılar izlenir (EA App).
     public func isInstalled(in bottleURL: URL) -> Bool {
         detect.allSatisfy { WineReparsePoint.resolve($0, in: bottleURL) != nil }
+    }
+
+    /// Bu tarifin bottle'ında çalışan her Wine sürecine eklenecek ortam: oyun sayılmayan exe adları
+    /// (`nonGamePrograms` + başlatıcı + kurulum dosyası). Alt süreçler (ör. Steam'in açtığı oyun) devralır.
+    public var wineEnvironment: [String: String] {
+        let launcher = launch.windowsPath.components(separatedBy: "\\").last ?? launch.windowsPath
+        var seen = Set<String>()
+        let names = ((nonGamePrograms ?? []) + [launcher, installer.fileName])
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.contains(",") && seen.insert($0.lowercased()).inserted }
+        return [Engine.nonGameProgramsVariable: names.joined(separator: ",")]
     }
 }

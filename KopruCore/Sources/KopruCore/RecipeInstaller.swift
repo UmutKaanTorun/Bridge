@@ -51,7 +51,7 @@ public struct RecipeInstaller: Sendable {
             // Takılan kurulum programı durdurulabilsin: görev iptal edilince bottle'daki Windows süreçleri kapatılır.
             let result = try await withTaskCancellationHandler {
                 try await runner.run(.unixFile(installerFile, arguments: recipe.installer.arguments), in: bottle,
-                                     appName: recipe.name)
+                                     appName: recipe.name, extraEnvironment: recipe.wineEnvironment)
             } onCancel: {
                 Task { await runner.killWineserver(prefix: bottle.url, settings: bottle.info.settings) }
             }

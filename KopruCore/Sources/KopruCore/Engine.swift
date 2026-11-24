@@ -48,6 +48,12 @@ public struct Engine: Sendable, Equatable {
     /// Rosetta bu değişken "1" iken AVX ve AVX2'yi CPUID'de bildirir (varsayılan: bildirmez).
     public static let advertiseAVXVariable = "ROSETTA_ADVERTISE_AVX"
 
+    /// Virgülle ayrılmış exe adları. Motor (ntdll, Köprü yaması) `KOPRU_APP_NAME`'li her Windows sürecini oyun
+    /// kategorisinde küçük bir .app paketinden başlatır; macOS tam ekranda Game Mode'u açar. Bu adlar (başlatıcının
+    /// kendi süreçleri) ve Windows'un kendi programları oyun sayılmaz, eskisi gibi paketsiz açılır; yoksa launcher
+    /// açık durdukça Game Mode oturumu açık kalır. Yama: Tools/motor-yamalari/ntdll-game-mode.patch
+    public static let nonGameProgramsVariable = "KOPRU_NONGAME_EXE"
+
     public static func isValid(_ root: URL) -> Bool {
         FileManager.default.isExecutableFile(atPath: root.appendingPathComponent("bin/wine").path)
     }
