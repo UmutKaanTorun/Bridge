@@ -1,0 +1,15 @@
+Köprü yaması: mikrofon arabelleği taşınca okuma konumu başa sarılır; GetBuffer arabellek dışını göstermez.
+CrossOver 26.3.0 kaynağına uygulanır: patch -p1 < winecoreaudio-yakalama-tasmasi.patch
+
+--- a/dlls/winecoreaudio.drv/coreaudio.c
++++ b/dlls/winecoreaudio.drv/coreaudio.c
+@@ -1247,6 +1247,9 @@
+         if(stream->held_frames + wanted_frames > stream->bufsize_frames){
+             stream->lcl_offs_frames += buf_ptr_diff(stream->lcl_offs_frames, stream->wri_offs_frames,
+                                                     stream->bufsize_frames);
++            /* Köprü yaması: okuma konumu başa sarılmazsa arabellek sonunu geçer; sonraki GetBuffer arabellek
++             * dışını gösterir ve oradan kopyalayan program çöker (PEAK'in mikrofon iş parçacığı). */
++            stream->lcl_offs_frames %= stream->bufsize_frames;
+             stream->held_frames = stream->bufsize_frames;
+         }else
+             stream->held_frames += wanted_frames;
