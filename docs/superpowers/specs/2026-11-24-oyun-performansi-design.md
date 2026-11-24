@@ -1,7 +1,7 @@
 # Bridge — Oyun performansı: MetalFX, AVX, uyku engeli, Game Mode
 
 - **Tarih:** 2026-11-24
-- **Durum:** Umut tasarımı onayladı (2026-11-24); uygulanmadı.
+- **Durum:** Umut tasarımı onayladı (2026-11-24); uygulandı (`oyun-performansi` dalı). Game Mode: Aşama 0 kararı B (3.5'in sonu). Geliştirme motoru güncel; Release paketi bir sonraki sürümle yenilenir. Henüz yapılmayan elle denemeler: Bottle Ayarları penceresinin görünümü, MetalFX'in oyun içinde (HUD'da `MetalFX: Spatial`), Steam arayüzünden açılan oyunda Game Mode, Steam dışındaki başlatıcıların oyun dışı listeleri.
 - **Bağlam:** "Platformu Mac'e uyumlu ve optimize hale getirme" isteğinden oyun performansı parçası. Motor (CrossOver 26.3.0 kaynağı + DXMT 0.80) bunların çoğunu zaten taşıyor; Bridge açmıyordu. Kapsam dışı kalanlar 7. bölümde.
 
 ## Özet
@@ -156,7 +156,9 @@ Denemeler Debug Bridge'le, Bridge'in kendi açma yolundan yapıldı (`KOPRU_SAYF
 | Dock | 1 Steam + 1 PEAK (Foreground), 2 Steam süreci BackgroundOnly | `LSUIElement`'ten sonra aynı: 1 + 1 Foreground, 2 Steam süreci UIElement |
 | Uyku engeli (yama 6, aynı derleme) | — | `uyku.exe`: `PreventUserIdleDisplaySleep "Wine: SetThreadExecutionState"` 1. adımda var, temizleyince ve çıkışta yok. PEAK (Unity) bu çağrıyı yapmıyor. |
 
-- "Yalnız oyunlar" kuralı ayrıca denendi (`calistir.sh`): listedeki exe, `cmd` ve `C:\windows\system32\cmd.exe` düz bağlantıyla; listede olmayan `avx.exe` paketle açıldı. Steam'in arayüzüyle uçtan uca deneme ve başka başlatıcıların listeleri (Epic, GOG, Ubisoft, Battle.net, EA, Rockstar) henüz denenmedi; listede olmayan bir yardımcı süreç Game Mode simgesini yine gösterebilir.
+- "Yalnız oyunlar" kuralı ayrıca denendi (`calistir.sh`): listedeki exe, `cmd` ve `C:\windows\system32\cmd.exe` düz bağlantıyla; listede olmayan `avx.exe` paketle açıldı.
+- Geliştirme motoruyla yalnız Steam açıldı (oyun yok): ilk denemede `hardwareupdater.exe` 4 kısa Game Mode oturumu açtı; Steam'in `bin` yardımcıları listeye eklenince gamepolicyd hiçbir süreci oyun saymadı, menü çubuğunda simge çıkmadı. Steam süreçleri `bundleID=[ NULL ]` (paketsiz).
+- Başka başlatıcıların listeleri (Epic, GOG, Ubisoft, Battle.net, EA, Rockstar) henüz denenmedi; listede olmayan bir yardımcı süreç Game Mode simgesini kısa süre gösterebilir.
 
 ## 4. Test
 
