@@ -1,0 +1,160 @@
+Köprü yaması (Game Mode): Köprü'nün açtığı oyun süreçleri (KOPRU_APP_NAME) yükleyicinin bağlantısını winetemp altında
+küçük bir <ad>.app paketinin içinden çalıştırır. Info.plist oyun kategorisi ve LSSupportsGameMode taşır; macOS tam ekranda
+Game Mode'u açar. LSUIElement, NSHighResolutionCapable ve NSMicrophoneUsageDescription bugünkü davranışı (Dock, çözünürlük,
+mikrofon izni) korur. Oyun sayılmayanlar eski düz bağlantıyla açılır: Windows'un kendi programları (X:\windows\..., dizinsiz
+yerleşik adlar) ve KOPRU_NONGAME_EXE'deki exe adları (tarifin başlatıcı süreçleri).
+ntdll-dock-adi.patch'ten sonra uygulanır: patch -p1 < ntdll-game-mode.patch
+
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -681,15 +681,138 @@
+     const char *name = getenv("KOPRU_APP_NAME");
+     if (!name || !*name || strchr(name, '/') || !strcmp(name, ".") || !strcmp(name, "..")) return NULL;
+     return strdup(name);
++}
++
++/* Köprü yaması (Game Mode): macOS Game Mode'u tam ekrandaki uygulamanın Info.plist'ine bakarak açar;
++ * paketsiz Wine süreçleri bunu alamıyor. Köprü'nün açtığı süreçler (KOPRU_APP_NAME) yükleyicinin
++ * bağlantısını winetemp altında küçük bir paketin içinden çalıştırır:
++ *   <ad>.app/Contents/MacOS/<ad>       yükleyiciye sabit bağlantı (olmazsa sembolik)
++ *   <ad>.app/Contents/MacOS/ntdll.so   yükleyici ntdll.so'yu kendi klasöründe arar (create_tempdir gibi)
++ *   <ad>.app/Contents/Info.plist       oyun kategorisi, LSSupportsGameMode, NSHighResolutionCapable,
++ *                                      NSMicrophoneUsageDescription (Bridge'in Info.plist'iyle aynı metin),
++ *                                      LSUIElement: paketsiz süreç gibi Dock'suz başlar; pencere açınca winemac
++ *                                      onu kendisi Dock'a alır (transformProcessToForeground)
++ * Info.plist her açılışta yeniden yazılır (geçici dosya + rename): yama değişince eski paket güncellenir.
++ * XML'de kaçış gerektiren adlarda paket kurulmaz; düz bağlantıya dönülür. */
++static const char kopru_microphone_text[] =
++    "Bridge'de çalışan oyunlar ve programlar, sesli sohbet gibi özellikler için mikrofonunuzu kullanmak istiyor.";
++
++static int kopru_write_file( const char *path, const char *data )
++{
++    size_t len = strlen( data );
++    int fd = open( path, O_WRONLY | O_CREAT | O_TRUNC, 0644 );
++    int ok;
++
++    if (fd < 0) return 0;
++    ok = write( fd, data, len ) == (ssize_t)len;
++    close( fd );
++    return ok;
+ }
++
++static char *kopru_create_bundle_link( const char *wineloader_path, const char *app_name )
++{
++    char *tempdir, *bundle = NULL, *contents = NULL, *macos = NULL, *exe = NULL, *plist_path = NULL;
++    char *plist_tmp = NULL, *plist = NULL, *ident = NULL, *ntdll = NULL, *ntdll_link = NULL, *p, *result = NULL;
++    struct stat st;
++
++    if (strpbrk( app_name, "&<>\"'" )) return NULL;
++    if (!(tempdir = create_tempdir( wineloader_path ))) return NULL;
+ 
++    if (asprintf( &bundle, "%s%s.app", tempdir, app_name ) < 0) { bundle = NULL; goto done; }
++    if (asprintf( &contents, "%s/Contents", bundle ) < 0) { contents = NULL; goto done; }
++    if (asprintf( &macos, "%s/MacOS", contents ) < 0) { macos = NULL; goto done; }
++    if (asprintf( &exe, "%s/%s", macos, app_name ) < 0) { exe = NULL; goto done; }
++    if (strlen( exe ) >= MAX_PATH) goto done;
++
++    mkdir( bundle, 0700 );
++    mkdir( contents, 0700 );
++    mkdir( macos, 0700 );
++
++    if (!(ident = strdup( app_name ))) goto done;
++    for (p = ident; *p; p++)
++        if (!((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '.'))
++            *p = '-';
++
++    if (asprintf( &plist_path, "%s/Info.plist", contents ) < 0) { plist_path = NULL; goto done; }
++    if (asprintf( &plist_tmp, "%s/Info.plist.%d", contents, (int)getpid() ) < 0) { plist_tmp = NULL; goto done; }
++    if (asprintf( &plist,
++                  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
++                  "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
++                  "<plist version=\"1.0\">\n<dict>\n"
++                  "\t<key>CFBundleExecutable</key><string>%s</string>\n"
++                  "\t<key>CFBundleIdentifier</key><string>dev.kopru.wine.%s</string>\n"
++                  "\t<key>CFBundleName</key><string>%s</string>\n"
++                  "\t<key>CFBundlePackageType</key><string>APPL</string>\n"
++                  "\t<key>LSApplicationCategoryType</key><string>public.app-category.games</string>\n"
++                  "\t<key>LSSupportsGameMode</key><true/>\n"
++                  "\t<key>LSUIElement</key><true/>\n"
++                  "\t<key>NSHighResolutionCapable</key><true/>\n"
++                  "\t<key>NSMicrophoneUsageDescription</key><string>%s</string>\n"
++                  "</dict>\n</plist>\n",
++                  app_name, ident, app_name, kopru_microphone_text ) < 0) { plist = NULL; goto done; }
++    /* Aynı anda açılan süreçler yarım yazılmış dosya görmesin diye geçici dosya + rename. */
++    if (!kopru_write_file( plist_tmp, plist ) || rename( plist_tmp, plist_path ))
++    {
++        unlink( plist_tmp );
++        goto done;
++    }
++
++    if (!(ntdll = malloc( strlen( wineloader_path ) + sizeof("/ntdll.so") ))) goto done;
++    strcpy( ntdll, wineloader_path );
++    if ((p = strrchr( ntdll, '/' ))) *p = 0;
++    strcat( ntdll, "/ntdll.so" );
++    if (asprintf( &ntdll_link, "%s/ntdll.so", macos ) < 0) { ntdll_link = NULL; goto done; }
++    symlink( ntdll, ntdll_link ); /* varsa başarısız olur; sorun değil */
++
++    /* Bağlantı önceki açılıştan kalmışsa (bu klasördeyse doğru yeri gösterir) yeniden kullanılır. */
++    if (!stat( exe, &st ) || !link( wineloader_path, exe ) || !symlink( wineloader_path, exe ))
++    {
++        result = exe;
++        exe = NULL;
++    }
++
++done:
++    free( tempdir ); free( bundle ); free( contents ); free( macos ); free( exe );
++    free( plist_path ); free( plist_tmp ); free( plist ); free( ident ); free( ntdll ); free( ntdll_link );
++    return result;
++}
++
++/* Köprü yaması (Game Mode): oyun olmayan süreçler eski düz bağlantıyla açılır; yoksa launcher açık durdukça
++ * macOS Game Mode oturumu açar (menü çubuğunda simge). Oyun sayılmayanlar: Windows'un kendi programları
++ * (X:\windows\...) ve KOPRU_NONGAME_EXE'deki exe adları (virgülle ayrılmış; tarifin başlatıcı süreçleri,
++ * alt süreçler de devralır). */
++static int kopru_is_game( const char *image_path )
++{
++    const char *list = getenv( "KOPRU_NONGAME_EXE" ), *name, *p;
++    size_t len;
++
++    if (!image_path) return 0;
++    /* Dizinsiz ad: Wine'ın yerleşik programı (reg, cmd, winecfg, start…). */
++    if (!strchr( image_path, '\\' ) && !strchr( image_path, '/' )) return 0;
++    if ((p = strchr( image_path, ':' )) && !strncasecmp( p + 1, "\\windows\\", 9 )) return 0;
++    name = image_path;
++    if ((p = strrchr( name, '\\' ))) name = p + 1;
++    if ((p = strrchr( name, '/' ))) name = p + 1;
++    len = strlen( name );
++    while (list && *list)
++    {
++        const char *end = strchr( list, ',' );
++        size_t n = end ? (size_t)(end - list) : strlen( list );
++        if (n == len && !strncasecmp( list, name, n )) return 0;
++        list = end ? end + 1 : NULL;
++    }
++    return 1;
++}
++
+ static void replace_wineloader_path_with_link(char **wineloader_path, const char *image_path)
+ {
+     char *app_name = kopru_app_name(); /* Köprü yaması */
++    int bundled = app_name != NULL && kopru_is_game( image_path ); /* Köprü yaması: Game Mode */
+     if (!app_name) app_name = extract_exe_name(image_path);
+     if (app_name)
+     {
+-        char *preloader_path = create_preloader_link(*wineloader_path, app_name);
++        char *preloader_path = bundled ? kopru_create_bundle_link(*wineloader_path, app_name) : NULL; /* Köprü yaması: Game Mode */
++        if (!preloader_path) preloader_path = create_preloader_link(*wineloader_path, app_name);
+         if (preloader_path)
+         {
+             free(*wineloader_path);
+@@ -2597,7 +2720,9 @@
+     /* default to 32-bit loader to support 32-bit prefixes */
+     if (machine == IMAGE_FILE_MACHINE_AMD64) machine = IMAGE_FILE_MACHINE_I386;
+ 
+-    loader_exec( new_argv, machine, argv[0] );
++    /* Köprü yaması (Game Mode): Köprü'nün açtığı ilk süreçte görüntü yolu wine'ın kendisi değil, açılan program
++     * (argv[1]); Dock adı KOPRU_APP_NAME'den geldiği için yalnız oyun denetimini (kopru_is_game) etkiler. */
++    loader_exec( new_argv, machine, (getenv( "KOPRU_APP_NAME" ) && argc > 1) ? argv[1] : argv[0] );
+     fatal_error( "could not exec the wine loader\n" );
+ }
+ 

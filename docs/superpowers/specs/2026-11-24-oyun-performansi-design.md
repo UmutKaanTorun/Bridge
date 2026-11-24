@@ -130,13 +130,33 @@ public var advertiseAVX: Bool?
   - `LSApplicationCategoryType` = `public.app-category.games`, `LSSupportsGameMode` = `true`
   - `NSHighResolutionCapable` = `true`: paketsiz süreçler bugün yüksek çözünürlüklü sayılıyor; anahtar olmazsa AppKit pencereyi düşük çözünürlük kipinde açabilir ve MetalFX çıktısı değişir.
   - `NSMicrophoneUsageDescription`: Bridge'inkiyle aynı metin (commit `13312c8`: bu açıklama olmadan mikrofon açan oyun donuyordu).
-- Paket zaten varsa yeniden kullanılır (bugünkü "bağlantı varsa kullan" kuralı).
+  - `LSUIElement` = `true` (Aşama 0'da eklendi): paketsiz süreçler Dock'suz başlıyor, winemac pencere açınca onları Dock'a alıyor (`transformProcessToForeground`). Bu anahtar olmadan paketli süreçler ön planda başlıyor, Steam'in pencere açmayan yardımcıları da Dock'a düşüyordu.
+- Paket ve bağlantı varsa yeniden kullanılır; Info.plist her açılışta geçici dosya + `rename` ile yeniden yazılır (yama değişince eski paket güncellenir, aynı anda açılan süreçler yarım dosya görmez). `MacOS/ntdll.so` bağlantısı da konur: yükleyici `ntdll.so`'yu kendi klasöründe arar (`create_tempdir` gibi).
+- **Yalnız oyunlar paketlenir** (Umut'un kararı, 2026-11-24: Game Mode simgesi Steam açıkken değil, yalnız oyun açıkken görünsün). Oyun sayılmayanlar eski düz bağlantıyla açılır:
+  - Windows'un kendi programları: `X:\windows\…` yolları ve dizinsiz yerleşik adlar (`reg`, `cmd`, `winecfg`, `start`).
+  - `KOPRU_NONGAME_EXE`'deki exe adları (virgülle ayrılmış, büyük/küçük harf duyarsız). Bridge bunu `Recipe.wineEnvironment`'tan verir: tarifin `nonGamePrograms` listesi + başlatıcının ve kurulum dosyasının adı. Alt süreçler devralır.
+  - Liste klasör değil ad: Steam, Ubisoft ve GOG oyunları başlatıcı klasörünün altına kuruluyor.
+- Köprü'nün açtığı ilk süreçte (`reexec_loader`) görüntü yolu `wine`'ın kendisi değil açılan program (`argv[1]`); yoksa Bridge'in açtığı `steam.exe` listeye bakılmadan oyun sayılıyordu. Dock adı `KOPRU_APP_NAME`'den geldiği için etkilenmez.
 - `KOPRU_APP_NAME` yoksa davranış eskisiyle aynı.
 - **Riskler (Aşama 0'da ve sonra denenecek):**
   - TCC: mikrofon izni hâlâ Bridge'e mi yazılıyor? Süreci Bridge başlattığı için öyle beklenir. PEAK'in sesli sohbeti açılmalı.
   - Dock: ad ve simge aynı kalmalı. Rockstar'da tek simge kalmalı (`winemac-dock-gizle.patch` exe adına bakıyor, paketten etkilenmemeli).
   - LaunchServices: geçici paketler kayıt veritabanına giriyor mu (`lsregister -dump | grep winetemp`)? Klasör yolu sabit olduğu için kayıtların birikmemesi beklenir.
-  - Steam'in kendisi de "oyun" kategorisinde olur. Game Mode yalnız tam ekranda devreye girdiği için pencereli Steam'i etkilememeli.
+  - Steam'in kendisi de "oyun" kategorisinde olur. Game Mode yalnız tam ekranda devreye girdiği için pencereli Steam'i etkilememeli. (Aşama 0: etkiliyordu; Steam açıkken Game Mode oturumu "paused" açılıp menü çubuğunda simge görünüyordu. Yukarıdaki "yalnız oyunlar" kuralıyla giderildi.)
+
+**Aşama 0 sonucu (2026-11-24): Karar B, yama 7 uygulanıyor.**
+
+Denemeler Debug Bridge'le, Bridge'in kendi açma yolundan yapıldı (`KOPRU_SAYFA=bottle:Steam KOPRU_AC=<program>`; Debug derlemesine eklendi, erişilebilirlik izni olmadan tıklanamıyordu). PEAK, Steam'in başlatma seçeneği penceresine takılmasın diye geçici bir "PEAK Deneme" kısayolundan (`PEAK.exe -force-d3d11`) ve geçici `steam_appid.txt`'lerle açıldı; bunlar deneme sonrası kaldırıldı.
+
+| | Yamasız motor (A) | Paketli motor (B2) |
+|---|---|---|
+| `lsappinfo` | `bundleID=[ NULL ]`, `…/winetemp-…/PEAK Deneme` | `bundleID="dev.kopru.wine.PEAK-Deneme"`, `…/PEAK Deneme.app/Contents/MacOS/PEAK Deneme` |
+| gamepolicyd | `Ignoring` (süreç oyun sayılmıyor) | `Found game … labelReason=infoPlist`; PEAK önde ve tam ekranda: `Enabled DPS for PEAK Deneme`, `Game mode status is now on`; başka uygulama öne gelince `paused` |
+| Mikrofon | `audio-in` etkin, oyun donmuyor | Aynı (izin Bridge'de kaldı) |
+| Dock | 1 Steam + 1 PEAK (Foreground), 2 Steam süreci BackgroundOnly | `LSUIElement`'ten sonra aynı: 1 + 1 Foreground, 2 Steam süreci UIElement |
+| Uyku engeli (yama 6, aynı derleme) | — | `uyku.exe`: `PreventUserIdleDisplaySleep "Wine: SetThreadExecutionState"` 1. adımda var, temizleyince ve çıkışta yok. PEAK (Unity) bu çağrıyı yapmıyor. |
+
+- "Yalnız oyunlar" kuralı ayrıca denendi (`calistir.sh`): listedeki exe, `cmd` ve `C:\windows\system32\cmd.exe` düz bağlantıyla; listede olmayan `avx.exe` paketle açıldı. Steam'in arayüzüyle uçtan uca deneme ve başka başlatıcıların listeleri (Epic, GOG, Ubisoft, Battle.net, EA, Rockstar) henüz denenmedi; listede olmayan bir yardımcı süreç Game Mode simgesini yine gösterebilir.
 
 ## 4. Test
 

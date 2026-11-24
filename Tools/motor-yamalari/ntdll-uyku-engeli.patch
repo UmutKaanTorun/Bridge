@@ -1,0 +1,84 @@
+Köprü yaması (uyku engeli): SetThreadExecutionState macOS'un güç kilitlerine (IOPMAssertion) bağlanır.
+ES_CONTINUOUS|ES_DISPLAY_REQUIRED isteyen program açıkken ekran kararmaz; ES_SYSTEM_REQUIRED Mac'in uyumasını engeller.
+Wine'da bu çağrı taslaktı; kumandayla oynanan oyunlarda ekran kararıyordu.
+ntdll-saat-dilimi.patch'ten sonra uygulanır: patch -p1 < ntdll-uyku-engeli.patch
+
+--- a/dlls/ntdll/unix/system.c
++++ b/dlls/ntdll/unix/system.c
+@@ -62,6 +62,7 @@
+ # include <IOKit/IOKitLib.h>
+ # include <IOKit/ps/IOPSKeys.h>
+ # include <IOKit/ps/IOPowerSources.h>
++# include <IOKit/pwr_mgt/IOPMLib.h> /* Köprü yaması: uyku engeli */
+ # include <mach/mach.h>
+ # include <mach/machine.h>
+ # include <mach/mach_init.h>
+@@ -4773,6 +4774,55 @@
+ }
+ 
+ 
++#ifdef __APPLE__
++/* Köprü yaması (uyku engeli): SetThreadExecutionState macOS'un güç kilitlerine bağlanır.
++ * ES_CONTINUOUS ile istenen durum süreç genelinde tutulur (Windows iş parçacığı başına tutar; oyunlarda
++ * çağrı neredeyse hep tek iş parçacığından gelir). Süreç kapanınca macOS kilitleri kendisi bırakır.
++ * Tek seferlik ES_DISPLAY_REQUIRED boşta kalma sayacını sıfırlar; tek seferlik ES_SYSTEM_REQUIRED yok
++ * sayılır, çünkü kullanıcı etkinliği bildirmek ekranı da uyandırır. */
++#ifndef ES_AWAYMODE_REQUIRED
++#define ES_AWAYMODE_REQUIRED 0x00000040
++#endif
++
++static pthread_mutex_t kopru_power_mutex = PTHREAD_MUTEX_INITIALIZER;
++static IOPMAssertionID kopru_display_assertion = kIOPMNullAssertionID;
++static IOPMAssertionID kopru_system_assertion = kIOPMNullAssertionID;
++static IOPMAssertionID kopru_activity_assertion = kIOPMNullAssertionID;
++
++static void kopru_set_assertion( IOPMAssertionID *id, CFStringRef type, int wanted )
++{
++    if (wanted && *id == kIOPMNullAssertionID)
++    {
++        if (IOPMAssertionCreateWithName( type, kIOPMAssertionLevelOn,
++                                         CFSTR("Wine: SetThreadExecutionState"), id ) != kIOReturnSuccess)
++            *id = kIOPMNullAssertionID;
++    }
++    else if (!wanted && *id != kIOPMNullAssertionID)
++    {
++        IOPMAssertionRelease( *id );
++        *id = kIOPMNullAssertionID;
++    }
++}
++
++static void kopru_apply_execution_state( EXECUTION_STATE state )
++{
++    pthread_mutex_lock( &kopru_power_mutex );
++    if (state & ES_CONTINUOUS)
++    {
++        kopru_set_assertion( &kopru_display_assertion, kIOPMAssertionTypePreventUserIdleDisplaySleep,
++                             (state & ES_DISPLAY_REQUIRED) != 0 );
++        kopru_set_assertion( &kopru_system_assertion, kIOPMAssertionTypePreventUserIdleSystemSleep,
++                             (state & (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)) != 0 );
++    }
++    else if (state & ES_DISPLAY_REQUIRED)
++    {
++        IOPMAssertionDeclareUserActivity( CFSTR("Wine: SetThreadExecutionState"), kIOPMUserActiveLocal,
++                                          &kopru_activity_assertion );
++    }
++    pthread_mutex_unlock( &kopru_power_mutex );
++}
++#endif
++
+ /******************************************************************************
+  *              NtSetThreadExecutionState  (NTDLL.@)
+  */
+@@ -4780,8 +4830,11 @@
+ {
+     static EXECUTION_STATE current = ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED | ES_USER_PRESENT;
+ 
+-    WARN( "(0x%x, %p): stub, harmless.\n", new_state, old_state );
++    TRACE( "(0x%x, %p)\n", new_state, old_state );
+     *old_state = current;
+     if (!(current & ES_CONTINUOUS) || (new_state & ES_CONTINUOUS)) current = new_state;
++#ifdef __APPLE__
++    kopru_apply_execution_state( new_state ); /* Köprü yaması */
++#endif
+     return STATUS_SUCCESS;
+ }
