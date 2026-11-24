@@ -31,6 +31,7 @@ Her platform kendi **bottle**'ında durur. Bottle, içinde ayrı bir Windows ort
 - **Hile koruması uyarısı:** EasyAntiCheat gibi hile koruması kullanan oyunlar işaretlenir; açmadan önce Bridge sorar.
 - **Listede olmayan programlar:** Herhangi bir `.exe` ya da `.msi` kurulum dosyasını pencereye sürükleyin ya da "Kurulum dosyası seç…" ile gösterin.
 - **Motor uygulamanın içinde:** Wine 11.0 + DXMT (Metal üzerinden DirectX 11) Bridge'in içinde gelir; ayrıca bir şey kurmanız gerekmez, yalnızca Rosetta.
+- **Oyun performansı:** Tam ekrandaki oyunlarda macOS Game Mode devreye girer; oyun ekranın açık kalmasını istediğinde Mac uykuya geçmez. Bottle ayarlarından DirectX 11 oyunlarını MetalFX ile Retina çözünürlüğe büyütebilir, AVX isteyen oyunlar için Rosetta'nın AVX desteğini açabilirsiniz.
 - **Mac'e yakışan arayüz:** SwiftUI ile yazıldı. Açık ve koyu görünüme uyar, macOS 26'da Liquid Glass ile çizilir.
 
 ## Ekran görüntüleri
